@@ -1,0 +1,27 @@
+services:
+  web:
+    build: ./apps/web
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - API_URL=http://api:8000
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - api
+
+  api:
+    build: ./apps/api
+    ports:
+      - "8000:8000"
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+    volumes:
+      - ./apps/api:/app
+      - ./fixtures:/app/fixtures
