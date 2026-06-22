@@ -105,7 +105,7 @@ export function ExcelWriteback({ students }: Props) {
         <div className="grid gap-3">
           <label className="text-sm">
             Sheet
-            <Select value={sheetName} onValueChange={setSheetName}>
+            <Select value={sheetName} onValueChange={(v) => setSheetName(v ?? "")}>
               <SelectTrigger className="mt-1">
                 <SelectValue placeholder="Select sheet" />
               </SelectTrigger>
@@ -121,7 +121,7 @@ export function ExcelWriteback({ students }: Props) {
             <>
               <label className="text-sm">
                 Student name column
-                <Select value={nameCol} onValueChange={setNameCol}>
+                <Select value={nameCol} onValueChange={(v) => setNameCol(v ?? "")}>
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Which column has names?" />
                   </SelectTrigger>
@@ -135,7 +135,7 @@ export function ExcelWriteback({ students }: Props) {
 
               <label className="text-sm">
                 Score column to write into
-                <Select value={scoreCol} onValueChange={setScoreCol}>
+                <Select value={scoreCol} onValueChange={(v) => setScoreCol(v ?? "")}>
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="e.g. Exam 1, Quiz 3…" />
                   </SelectTrigger>

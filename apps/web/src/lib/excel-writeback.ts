@@ -70,8 +70,8 @@ export async function openExcelFile(): Promise<{
 
   const sheets: ExcelSheet[] = workbook.SheetNames.map((name) => {
     const ws = workbook.Sheets[name];
-    const data = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { header: 1 });
-    const headers = (data[0] as string[] | undefined) ?? [];
+    const data = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1 });
+    const headers = data[0] ?? [];
     const columns: ExcelColumn[] = headers
       .map((h, i) => ({ key: XLSX.utils.encode_col(i), label: String(h ?? `Column ${i + 1}`) }))
       .filter((c) => c.label.trim() !== "");
@@ -118,12 +118,12 @@ export function buildWritebackPlan(
   matchThreshold = 0.82,
 ): WritebackPlan {
   const ws = workbook.Sheets[sheetName];
-  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { header: 1 }) as string[][];
+  const rows = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1 });
 
   // Rows 1+ are data (row 0 is headers)
   const dataRows = rows.slice(1).map((row, idx) => ({
-    rowIndex: idx + 1,
-    name: String(row[XLSX.utils.decode_col(nameColumnKey)] ?? "").trim(),
+    excelRow: idx + 1,
+    excelName: String(row[XLSX.utils.decode_col(nameColumnKey)] ?? "").trim(),
   }));
 
   const matched: MatchResult[] = [];
@@ -132,15 +132,15 @@ export function buildWritebackPlan(
   for (const student of students) {
     const scores = dataRows.map((row) => ({
       ...row,
-      similarity: similarity(student.name, row.name),
+      similarity: similarity(student.name, row.excelName),
     }));
     scores.sort((a, b) => b.similarity - a.similarity);
 
     const best = scores[0];
     if (best && best.similarity >= matchThreshold) {
       matched.push({
-        excelRow: best.rowIndex,
-        excelName: best.name,
+        excelRow: best.excelRow,
+        excelName: best.excelName,
         anyGradeStudent: student,
         similarity: best.similarity,
       });
