@@ -19,7 +19,7 @@ export async function createClass(formData: FormData) {
       teacher_id: user.id,
       name,
       subject: subject || null,
-      semester: semester ? Number(semester) : null,
+      semester: semester || null,
       academic_year: academic_year || null,
     })
     .select("id")

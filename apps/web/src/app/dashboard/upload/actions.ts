@@ -2,6 +2,9 @@
 
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
+import type { Database } from "@/lib/database.types"
+
+type AssessmentType = Database["public"]["Enums"]["assessment_type"]
 
 export async function uploadScans(formData: FormData) {
   const supabase = await createClient()
@@ -19,14 +22,17 @@ export async function uploadScans(formData: FormData) {
   }
 
   // Create the assessment record first
+  if (!classId) {
+    redirect("/dashboard/upload?error=Please+select+a+class")
+  }
+
   const { data: assessment, error: assessmentError } = await supabase
     .from("assessments")
     .insert({
-      class_id: classId || null,
-      teacher_id: user.id,
+      class_id: classId,
       title,
-      type: type || null,
-      total_items: totalItems ? Number(totalItems) : null,
+      type: (type as AssessmentType) || null,
+      total_items: totalItems ? Number(totalItems) : undefined,
       conducted_at: new Date().toISOString(),
     })
     .select("id")
