@@ -327,7 +327,14 @@ export type Database = {
           id: string
           created_at: string
           submission_id: string | null
+          student_name: string | null
+          assessment_title: string | null
+          status: "pending" | "completed" | null
+          completed_at: string | null
           ocr_result: Json | null
+          grade_result: Json | null
+          reading_corrections: Json | null
+          corrected_bboxes: Json | null
           review_status: "pending" | "reviewed" | null
           review_results: Json | null
           reviewed_at: string | null
@@ -337,7 +344,14 @@ export type Database = {
           id?: string
           created_at?: string
           submission_id?: string | null
+          student_name?: string | null
+          assessment_title?: string | null
+          status?: "pending" | "completed" | null
+          completed_at?: string | null
           ocr_result?: Json | null
+          grade_result?: Json | null
+          reading_corrections?: Json | null
+          corrected_bboxes?: Json | null
           review_status?: "pending" | "reviewed" | null
           review_results?: Json | null
           reviewed_at?: string | null
@@ -347,7 +361,14 @@ export type Database = {
           id?: string
           created_at?: string
           submission_id?: string | null
+          student_name?: string | null
+          assessment_title?: string | null
+          status?: "pending" | "completed" | null
+          completed_at?: string | null
           ocr_result?: Json | null
+          grade_result?: Json | null
+          reading_corrections?: Json | null
+          corrected_bboxes?: Json | null
           review_status?: "pending" | "reviewed" | null
           review_results?: Json | null
           reviewed_at?: string | null
