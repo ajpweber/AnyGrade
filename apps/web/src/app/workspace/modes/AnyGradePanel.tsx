@@ -484,9 +484,12 @@ export function AnyGradePanel({ activeClassId }: Props) {
       // For batch PDFs: split into per-student slices first, then grade each slice
       const isBatchPdf = files.length === 1 && files[0].file.name.endsWith(".pdf") && files[0].file.size > 2_000_000
       if (isBatchPdf) {
+        // ZipGrade: split by page (1 sheet = 1 page), no Claude needed
+        // Handwritten: use split-batch (Claude detects student boundaries by handwriting)
+        const splitEndpoint = zipgradeMode ? "/api/split-pages" : "/api/split-batch"
         const splitForm = new FormData()
         splitForm.append("file", files[0].file)
-        const splitRes = await fetch("/api/split-batch", { method: "POST", body: splitForm })
+        const splitRes = await fetch(splitEndpoint, { method: "POST", body: splitForm })
         const splitJson = await splitRes.json()
         if (!splitRes.ok) throw new Error(splitJson.error ?? "Batch split failed")
         const { students } = splitJson as { students: { name: string | null; pdfBase64: string }[] }
