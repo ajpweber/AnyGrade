@@ -14,15 +14,8 @@ type Props = {
   userEmail: string
 }
 
-const inputStyle: React.CSSProperties = {
-  width: "100%", background: "#1a1a1a", border: "1px solid #2a2a2a",
-  borderRadius: 8, color: "#fff", fontSize: 13, padding: "9px 12px",
-  outline: "none", boxSizing: "border-box",
-}
-const labelStyle: React.CSSProperties = {
-  display: "block", fontSize: 10, fontWeight: 600,
-  textTransform: "uppercase", letterSpacing: ".1em", color: "#666", marginBottom: 6,
-}
+const inputCls = "w-full border border-zinc-200 rounded-lg bg-white text-zinc-900 text-sm px-3 py-2 outline-none focus:border-zinc-400 placeholder:text-zinc-400"
+const labelCls = "block text-[10px] font-semibold uppercase tracking-wide text-zinc-500 mb-1.5"
 
 function AddClassModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const [name, setName] = useState("")
@@ -85,40 +78,40 @@ function AddClassModal({ onClose, onCreated }: { onClose: () => void; onCreated:
 
   return (
     <div
-      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.7)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center" }}
+      className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div style={{ background: "#161616", border: "1px solid #2a2a2a", borderRadius: 12, padding: "28px 32px", width: 440, maxWidth: "calc(100vw - 48px)" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: "#fff" }}>New class</span>
-          <button onClick={onClose} style={{ background: "none", border: "none", color: "#555", fontSize: 22, cursor: "pointer", lineHeight: 1 }}>×</button>
+      <div className="bg-white border border-zinc-200 rounded-xl p-8 w-[440px] max-w-[calc(100vw-48px)] shadow-lg">
+        <div className="flex items-center justify-between mb-6">
+          <span className="text-base font-semibold text-zinc-900">New class</span>
+          <button onClick={onClose} className="text-zinc-400 hover:text-zinc-600 text-xl leading-none">×</button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label style={labelStyle}>Class name *</label>
-            <input required value={name} onChange={e => setName(e.target.value)} placeholder="e.g. BSEE 2-A" style={inputStyle} />
+            <label className={labelCls}>Class name *</label>
+            <input required value={name} onChange={e => setName(e.target.value)} placeholder="e.g. BSEE 2-A" className={inputCls} />
           </div>
 
-          <div style={{ display: "flex", gap: 12 }}>
-            <div style={{ flex: "0 0 120px" }}>
-              <label style={labelStyle}>Subject code *</label>
-              <input required value={code} onChange={e => setCode(e.target.value)} placeholder="e.g. ENG001" style={inputStyle} />
+          <div className="flex gap-3">
+            <div className="w-[120px] shrink-0">
+              <label className={labelCls}>Subject code *</label>
+              <input required value={code} onChange={e => setCode(e.target.value)} placeholder="e.g. ENG001" className={inputCls} />
             </div>
-            <div style={{ flex: 1 }}>
-              <label style={labelStyle}>Subject title *</label>
-              <input required value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Engineering Dynamics" style={inputStyle} />
+            <div className="flex-1">
+              <label className={labelCls}>Subject title *</label>
+              <input required value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Engineering Dynamics" className={inputCls} />
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 12 }}>
-            <div style={{ flex: 1 }}>
-              <label style={labelStyle}>Academic year</label>
-              <input value={ay} onChange={e => setAy(e.target.value)} placeholder="e.g. 2025–2026" style={inputStyle} />
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <label className={labelCls}>Academic year</label>
+              <input value={ay} onChange={e => setAy(e.target.value)} placeholder="e.g. 2025–2026" className={inputCls} />
             </div>
-            <div style={{ flex: "0 0 120px" }}>
-              <label style={labelStyle}>Semester</label>
-              <select value={sem} onChange={e => setSem(e.target.value)} style={{ ...inputStyle, appearance: "none" }}>
+            <div className="w-[120px] shrink-0">
+              <label className={labelCls}>Semester</label>
+              <select value={sem} onChange={e => setSem(e.target.value)} className={inputCls}>
                 <option value="">—</option>
                 <option value="1">1st</option>
                 <option value="2">2nd</option>
@@ -127,20 +120,20 @@ function AddClassModal({ onClose, onCreated }: { onClose: () => void; onCreated:
             </div>
           </div>
 
-          {error && <p style={{ fontSize: 12, color: "#f87171", margin: 0 }}>{error}</p>}
+          {error && <p className="text-xs text-red-500">{error}</p>}
 
-          <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+          <div className="flex gap-2 mt-1">
             <button
               type="submit"
               disabled={saving}
-              style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "none", background: "#4DB832", color: "#fff", fontSize: 13, fontWeight: 600, cursor: saving ? "default" : "pointer", opacity: saving ? 0.6 : 1 }}
+              className="flex-1 py-2.5 rounded-lg bg-green-600 text-white text-sm font-semibold disabled:opacity-50"
             >
               {saving ? "Creating…" : "Create class"}
             </button>
             <button
               type="button"
               onClick={onClose}
-              style={{ padding: "10px 20px", borderRadius: 8, border: "1px solid #2a2a2a", background: "none", color: "#888", fontSize: 13, cursor: "pointer" }}
+              className="px-5 py-2.5 rounded-lg border border-zinc-200 text-zinc-600 text-sm hover:bg-zinc-50"
             >
               Cancel
             </button>
@@ -184,7 +177,7 @@ export function WorkspaceShell({ classes, userEmail }: Props) {
   const nudgeActive = mode === "quiz" && isRightReady && activeClass === null
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: "#111", color: "#fff", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", fontSize: 13, overflow: "hidden" }}>
+    <div className="flex h-screen bg-zinc-50 text-zinc-900 overflow-hidden" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", fontSize: 13 }}>
       <WorkspaceSidebar
         mode={mode}
         onModeChange={setMode}
@@ -199,7 +192,7 @@ export function WorkspaceShell({ classes, userEmail }: Props) {
         onAddClass={() => setShowAddClass(true)}
       />
 
-      <main style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {mode === "quiz" && (
           <AnyQuizPanel
             activeClass={activeClass}

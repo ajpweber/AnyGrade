@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useCallback } from "react"
 import type { ClassItem, Syllabus, QuizState, QuizTypeId } from "../types"
@@ -38,15 +38,15 @@ function Stepper({ value, onDecrement, onIncrement, min = 1 }: {
   min?: number
 }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#111", borderRadius: 6, padding: "4px 8px" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#f9fafb", borderRadius: 6, padding: "4px 8px" }}>
       <button
         onClick={onDecrement} disabled={value <= min}
         style={{ background: "none", border: "none", color: value <= min ? "#333" : "#aaa", fontSize: 16, cursor: value <= min ? "default" : "pointer", padding: 0, lineHeight: 1, width: 18 }}
       >−</button>
-      <span style={{ fontSize: 13, color: "#fff", minWidth: 20, textAlign: "center" }}>{value}</span>
+      <span style={{ fontSize: 13, color: "#18181b", minWidth: 20, textAlign: "center" }}>{value}</span>
       <button
         onClick={onIncrement}
-        style={{ background: "none", border: "none", color: "#aaa", fontSize: 16, cursor: "pointer", padding: 0, lineHeight: 1, width: 18 }}
+        style={{ background: "none", border: "none", color: "#71717a", fontSize: 16, cursor: "pointer", padding: 0, lineHeight: 1, width: 18 }}
       >+</button>
     </div>
   )
@@ -79,11 +79,11 @@ export function AnyQuizPanel({ activeClass, activeSyllabus, quizState, onQuizCha
 
   const fieldLblStyle: React.CSSProperties = {
     fontSize: 10, fontWeight: 600, textTransform: "uppercase",
-    letterSpacing: ".1em", color: "#666", marginBottom: 6, display: "block",
+    letterSpacing: ".1em", color: "#71717a", marginBottom: 6, display: "block",
   }
   const selectStyle: React.CSSProperties = {
-    width: "100%", background: "#1a1a1a", border: "1px solid #2a2a2a",
-    borderRadius: 8, color: "#fff", fontSize: 13, padding: "9px 12px",
+    width: "100%", background: "#ffffff", border: "1px solid #e4e4e7",
+    borderRadius: 8, color: "#18181b", fontSize: 13, padding: "9px 12px",
     appearance: "none", cursor: "pointer", outline: "none",
   }
 
@@ -95,12 +95,12 @@ export function AnyQuizPanel({ activeClass, activeSyllabus, quizState, onQuizCha
 
         {/* Subject chip */}
         {activeSyllabus ? (
-          <div style={{ display: "flex", alignItems: "baseline", gap: 10, padding: "10px 14px", background: "#1a1a1a", borderRadius: 8 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 10, padding: "10px 14px", background: "#ffffff", borderRadius: 8 }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: "#4DB832" }}>{activeSyllabus.subject_code}</span>
-            <span style={{ fontSize: 12, color: "#aaa" }}>{activeSyllabus.subject_title}</span>
+            <span style={{ fontSize: 12, color: "#71717a" }}>{activeSyllabus.subject_title}</span>
           </div>
         ) : (
-          <div style={{ fontSize: 12, color: "#555", fontStyle: "italic", paddingTop: 4 }}>
+          <div style={{ fontSize: 12, color: "#a1a1aa", fontStyle: "italic", paddingTop: 4 }}>
             Select a class from the left →
           </div>
         )}
@@ -145,7 +145,7 @@ export function AnyQuizPanel({ activeClass, activeSyllabus, quizState, onQuizCha
               <div
                 key={qt.id}
                 style={{
-                  borderRadius: 8, background: "#1a1a1a",
+                  borderRadius: 8, background: "#ffffff",
                   padding: "12px 14px",
                   opacity: row.on ? 1 : 0.5,
                   transition: "opacity .15s",
@@ -159,16 +159,16 @@ export function AnyQuizPanel({ activeClass, activeSyllabus, quizState, onQuizCha
                 {row.on && (
                   <div style={{ display: "flex", alignItems: "center", gap: 20, paddingLeft: 42 }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                      <span style={{ fontSize: 10, color: "#555", fontWeight: 600, textTransform: "uppercase", letterSpacing: ".08em" }}>Questions</span>
+                      <span style={{ fontSize: 10, color: "#a1a1aa", fontWeight: 600, textTransform: "uppercase", letterSpacing: ".08em" }}>Questions</span>
                       <Stepper value={row.qty} onDecrement={() => updateType(qt.id, { qty: row.qty - 1 })} onIncrement={() => updateType(qt.id, { qty: row.qty + 1 })} />
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                      <span style={{ fontSize: 10, color: "#555", fontWeight: 600, textTransform: "uppercase", letterSpacing: ".08em" }}>Pts / question</span>
+                      <span style={{ fontSize: 10, color: "#a1a1aa", fontWeight: 600, textTransform: "uppercase", letterSpacing: ".08em" }}>Pts / question</span>
                       <Stepper value={row.pts} onDecrement={() => updateType(qt.id, { pts: row.pts - 1 })} onIncrement={() => updateType(qt.id, { pts: row.pts + 1 })} />
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 4, marginLeft: "auto", textAlign: "right" }}>
-                      <span style={{ fontSize: 10, color: "#555", fontWeight: 600, textTransform: "uppercase", letterSpacing: ".08em" }}>Subtotal</span>
-                      <span style={{ fontSize: 15, fontWeight: 700, color: "#fff", paddingRight: 4 }}>{row.qty * row.pts} pts</span>
+                      <span style={{ fontSize: 10, color: "#a1a1aa", fontWeight: 600, textTransform: "uppercase", letterSpacing: ".08em" }}>Subtotal</span>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: "#18181b", paddingRight: 4 }}>{row.qty * row.pts} pts</span>
                     </div>
                   </div>
                 )}
@@ -178,28 +178,28 @@ export function AnyQuizPanel({ activeClass, activeSyllabus, quizState, onQuizCha
         </div>
 
         {/* Footer */}
-        <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 0", borderTop: "1px solid #1c1c1c", flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 0", borderTop: "1px solid #e4e4e7", flexShrink: 0 }}>
           {/* Randomize toggle */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <ToggleSwitch checked={quizState.randomize} onChange={() => update({ randomize: !quizState.randomize })} />
-            <span style={{ fontSize: 12, color: "#888" }}>Randomize</span>
+            <span style={{ fontSize: 12, color: "#71717a" }}>Randomize</span>
           </div>
 
           {/* Personalize toggle */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <ToggleSwitch checked={quizState.personalize} onChange={() => update({ personalize: !quizState.personalize })} />
-            <span style={{ fontSize: 12, color: "#888" }}>Personalize</span>
+            <span style={{ fontSize: 12, color: "#71717a" }}>Personalize</span>
           </div>
 
           {/* Totals */}
           <div style={{ marginLeft: "auto", textAlign: "right" }}>
             {isRightReady ? (
               <>
-                <div style={{ fontSize: 18, fontWeight: 700, color: "#fff" }}>{totalPts} pts</div>
-                <div style={{ fontSize: 11, color: "#666", marginTop: 2 }}>~{Math.round(totalMin)} min</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: "#18181b" }}>{totalPts} pts</div>
+                <div style={{ fontSize: 11, color: "#71717a", marginTop: 2 }}>~{Math.round(totalMin)} min</div>
               </>
             ) : (
-              <div style={{ fontSize: 12, color: "#444", fontStyle: "italic" }}>Toggle question types above</div>
+              <div style={{ fontSize: 12, color: "#a1a1aa", fontStyle: "italic" }}>Toggle question types above</div>
             )}
           </div>
 
@@ -221,3 +221,4 @@ export function AnyQuizPanel({ activeClass, activeSyllabus, quizState, onQuizCha
     </div>
   )
 }
+

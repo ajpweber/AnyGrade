@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useRef, useState } from "react"
 import type { GradeResult } from "@/app/api/grade/types"
@@ -107,7 +107,7 @@ export function PdfAnnotated({ objectUrl, results }: Props) {
 
   if (loading) {
     return (
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "20px 0", fontSize: 12, color: "#555" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "20px 0", fontSize: 12, color: "#a1a1aa" }}>
         <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#4DB832", animation: "ag-pulse 1.4s ease-in-out infinite", flexShrink: 0 }} />
         Rendering PDF…
       </div>
@@ -116,7 +116,7 @@ export function PdfAnnotated({ objectUrl, results }: Props) {
 
   if (error) {
     return (
-      <embed src={objectUrl} type="application/pdf" style={{ width: "100%", height: 480, borderRadius: 6, border: "1px solid #2a2a2a", display: "block" }} />
+      <embed src={objectUrl} type="application/pdf" style={{ width: "100%", height: 480, borderRadius: 6, border: "1px solid #e4e4e7", display: "block" }} />
     )
   }
 
@@ -127,9 +127,10 @@ export function PdfAnnotated({ objectUrl, results }: Props) {
           key={i}
           src={src}
           alt={`Page ${i + 1}`}
-          style={{ width: "100%", borderRadius: 6, border: "1px solid #2a2a2a", display: "block" }}
+          style={{ width: "100%", borderRadius: 6, border: "1px solid #e4e4e7", display: "block" }}
         />
       ))}
     </div>
   )
 }
+

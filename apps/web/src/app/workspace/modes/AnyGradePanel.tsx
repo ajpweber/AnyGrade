@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useRef, useState, useCallback, useEffect } from "react"
 import type { AKSource, UploadFile, ScannerState } from "../types"
@@ -72,7 +72,7 @@ function IconCamera() {
 // ── Shared components ──────────────────────────────────────────────────────
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".1em", color: "#aaa", marginBottom: 14 }}>
+    <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".1em", color: "#71717a", marginBottom: 14 }}>
       {children}
     </div>
   )
@@ -104,7 +104,7 @@ function SrcCard({ selected, onClick, icon, title, desc, badge }: SrcCardProps) 
       )}
       <span style={{ color: selected ? "#4DB832" : "#555", marginBottom: 10 }}>{icon}</span>
       <div style={{ fontSize: 13, fontWeight: 600, color: selected ? "#fff" : "#ccc", marginBottom: 4 }}>{title}</div>
-      <div style={{ fontSize: 11, color: "#666", lineHeight: 1.55 }}>{desc}</div>
+      <div style={{ fontSize: 11, color: "#71717a", lineHeight: 1.55 }}>{desc}</div>
       {badge && <div style={{ marginTop: 10 }}>{badge}</div>}
     </button>
   )
@@ -173,7 +173,7 @@ function StudentRow({ file, objectUrl, identity }: { file: GradeFileResult; obje
         onClick={() => setExpanded((v) => !v)}
         style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", cursor: "pointer", background: expanded ? "#1a1a1a" : "transparent" }}
       >
-        <span style={{ fontSize: 10, color: "#444", flexShrink: 0 }}>{expanded ? "▴" : "▾"}</span>
+        <span style={{ fontSize: 10, color: "#a1a1aa", flexShrink: 0 }}>{expanded ? "▴" : "▾"}</span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 13, color: "#ccc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayName}</div>
         </div>
@@ -199,7 +199,7 @@ function StudentRow({ file, objectUrl, identity }: { file: GradeFileResult; obje
               {objectUrl && (
                 isPdf
                   ? <PdfAnnotated objectUrl={objectUrl} results={[]} />
-                  : <img src={objectUrl} alt="scan" style={{ width: "100%", borderRadius: 6, border: "1px solid #2a2a2a", display: "block" }} />
+                  : <img src={objectUrl} alt="scan" style={{ width: "100%", borderRadius: 6, border: "1px solid #e4e4e7", display: "block" }} />
               )}
             </>
           ) : (
@@ -210,7 +210,7 @@ function StudentRow({ file, objectUrl, identity }: { file: GradeFileResult; obje
                     <PdfAnnotated objectUrl={objectUrl} results={file.results} />
                   ) : (
                     <>
-                      <img src={objectUrl} alt={displayName} style={{ width: "100%", borderRadius: 6, border: "1px solid #2a2a2a", display: "block" }} />
+                      <img src={objectUrl} alt={displayName} style={{ width: "100%", borderRadius: 6, border: "1px solid #e4e4e7", display: "block" }} />
                       {/* Bounding box overlays on images — always page 1 */}
                       {hasBboxes && file.results.map((r) => r.bbox && r.bbox.page === 1 && (
                         <div
@@ -252,7 +252,7 @@ function StudentRow({ file, objectUrl, identity }: { file: GradeFileResult; obje
                       border: `1px solid ${r.correct === null ? "rgba(239,68,68,.18)" : "rgba(217,119,6,.18)"}`,
                     }}>
                       <span style={{ fontSize: 12, fontWeight: 600, color: "#4DB832", minWidth: 48, flexShrink: 0 }}>{r.label}</span>
-                      <span style={{ flex: 1, fontSize: 12, color: "#aaa", fontFamily: "monospace" }}>{r.read || "—"}</span>
+                      <span style={{ flex: 1, fontSize: 12, color: "#71717a", fontFamily: "monospace" }}>{r.read || "—"}</span>
                       <span style={{ fontSize: 11, color: r.correct === null ? "#ef4444" : "#D97706", flexShrink: 0 }}>
                         {r.correct === null ? "Unread" : "Wrong"}{r.pts > 1 ? ` −${r.pts}` : ""}
                       </span>
@@ -261,7 +261,7 @@ function StudentRow({ file, objectUrl, identity }: { file: GradeFileResult; obje
                 </div>
               )}
               {flagged.length === 0 && (
-                <div style={{ fontSize: 12, color: "#555", textAlign: "center", padding: "12px 0" }}>All answers read and graded.</div>
+                <div style={{ fontSize: 12, color: "#a1a1aa", textAlign: "center", padding: "12px 0" }}>All answers read and graded.</div>
               )}
             </>
           )}
@@ -327,11 +327,11 @@ function ResultsTable({ results, meta, objectUrls, identities }: {
     <div>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 6 }}>
-        <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#aaa" }}>
+        <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#71717a" }}>
           Grading results{meta.type || meta.title ? ` — ${[meta.type, meta.title].filter(Boolean).join(": ")}` : ""}
         </span>
         {headerRight && (
-          <span style={{ fontSize: 11, color: "#555" }}>{headerRight}</span>
+          <span style={{ fontSize: 11, color: "#a1a1aa" }}>{headerRight}</span>
         )}
       </div>
 
@@ -344,10 +344,10 @@ function ResultsTable({ results, meta, objectUrls, identities }: {
       )}
 
       {/* Table */}
-      <div style={{ border: "1px solid #2a2a2a", borderRadius: 8, overflow: "hidden" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 16px", background: "#1a1a1a", borderBottom: "1px solid #2a2a2a" }}>
-          <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "#555" }}>Student</span>
-          <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "#555" }}>Status</span>
+      <div style={{ border: "1px solid #e4e4e7", borderRadius: 8, overflow: "hidden" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 16px", background: "#ffffff", borderBottom: "1px solid #2a2a2a" }}>
+          <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "#a1a1aa" }}>Student</span>
+          <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "#a1a1aa" }}>Status</span>
         </div>
         {visible.map((file) => (
           <StudentRow
@@ -446,7 +446,7 @@ function SendPanel({ gradeResults, files, identities, activeClassId, assessmentT
         <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
           {unmatched.map(({ f, extractedName }) => (
             <div key={f.filename} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: 12, color: "#888", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <span style={{ fontSize: 12, color: "#71717a", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {extractedName ?? f.filename.replace(/\.[^.]+$/, "")}
               </span>
               <input
@@ -454,7 +454,7 @@ function SendPanel({ gradeResults, files, identities, activeClassId, assessmentT
                 placeholder="Email (not on roster)"
                 value={overrides[f.filename] ?? ""}
                 onChange={(e) => setOverrides((p) => ({ ...p, [f.filename]: e.target.value }))}
-                style={{ width: 220, border: "1px solid #2a2a2a", borderRadius: 7, padding: "5px 9px", fontSize: 11, background: "#1a1a1a", color: "#fff", outline: "none", fontFamily: "inherit" }}
+                style={{ width: 220, border: "1px solid #e4e4e7", borderRadius: 7, padding: "5px 9px", fontSize: 11, background: "#ffffff", color: "#18181b", outline: "none", fontFamily: "inherit" }}
               />
             </div>
           ))}
@@ -756,19 +756,19 @@ export function AnyGradePanel({ activeClassId }: Props) {
 
       {/* Details bar — hidden until sheets or AK is loaded */}
       {detailsVisible && (
-        <div style={{ padding: "14px 32px", borderBottom: "1px solid #1c1c1c", background: "#111", flexShrink: 0, display: "flex", alignItems: "flex-end", gap: 20, flexWrap: "wrap" }}>
+        <div style={{ padding: "14px 32px", borderBottom: "1px solid #1c1c1c", background: "#f9fafb", flexShrink: 0, display: "flex", alignItems: "flex-end", gap: 20, flexWrap: "wrap" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-            <div style={{ fontSize: 11, fontWeight: 500, color: "#666" }}>Assessment title</div>
+            <div style={{ fontSize: 11, fontWeight: 500, color: "#71717a" }}>Assessment title</div>
             <input
               type="text"
               value={assessmentTitle}
               onChange={(e) => setAssessmentTitle(e.target.value)}
               placeholder="e.g. Quiz 3 – Kinematics"
-              style={{ border: "1px solid #2a2a2a", borderRadius: 7, padding: "6px 10px", fontSize: 12, background: "#1a1a1a", color: "#fff", outline: "none", width: 240, fontFamily: "inherit" }}
+              style={{ border: "1px solid #e4e4e7", borderRadius: 7, padding: "6px 10px", fontSize: 12, background: "#ffffff", color: "#18181b", outline: "none", width: 240, fontFamily: "inherit" }}
             />
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-            <div style={{ fontSize: 11, fontWeight: 500, color: "#666" }}>Type</div>
+            <div style={{ fontSize: 11, fontWeight: 500, color: "#71717a" }}>Type</div>
             <div style={{ display: "flex", gap: 5 }}>
               {ASSESSMENT_TYPES.map((t) => (
                 <button
@@ -787,13 +787,13 @@ export function AnyGradePanel({ activeClassId }: Props) {
             </div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-            <div style={{ fontSize: 11, fontWeight: 500, color: "#666" }}>Max score</div>
+            <div style={{ fontSize: 11, fontWeight: 500, color: "#71717a" }}>Max score</div>
             <input
               type="number"
               value={maxScore}
               onChange={(e) => setMaxScore(e.target.value === "" ? "" : Number(e.target.value))}
               placeholder="50"
-              style={{ border: "1px solid #2a2a2a", borderRadius: 7, padding: "6px 10px", fontSize: 12, background: "#1a1a1a", color: "#fff", outline: "none", width: 80, fontFamily: "inherit" }}
+              style={{ border: "1px solid #e4e4e7", borderRadius: 7, padding: "6px 10px", fontSize: 12, background: "#ffffff", color: "#18181b", outline: "none", width: 80, fontFamily: "inherit" }}
             />
           </div>
         </div>
@@ -853,7 +853,7 @@ export function AnyGradePanel({ activeClassId }: Props) {
                   onClick={() => fileInputRef.current?.click()}
                   style={{ border: `1.5px dashed ${dragActive ? "#4DB832" : "#2a2a2a"}`, borderRadius: 10, padding: "28px 24px", textAlign: "center", cursor: "pointer", transition: "border-color .15s" }}
                 >
-                  <svg style={{ width: 32, height: 32, color: "#555", margin: "0 auto 10px", display: "block" }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <svg style={{ width: 32, height: 32, color: "#a1a1aa", margin: "0 auto 10px", display: "block" }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <path d="M12 15V4M12 4L8 8M12 4l4 4" strokeLinecap="round" strokeLinejoin="round"/>
                     <path d="M4 17v1a2 2 0 002 2h12a2 2 0 002-2v-1" strokeLinecap="round"/>
                   </svg>
@@ -863,7 +863,7 @@ export function AnyGradePanel({ activeClassId }: Props) {
                       browse
                     </button>
                   </div>
-                  <div style={{ fontSize: 11, color: "#555", marginTop: 6 }}>Individual sheets or full batches — JPG · PNG · HEIC · PDF</div>
+                  <div style={{ fontSize: 11, color: "#a1a1aa", marginTop: 6 }}>Individual sheets or full batches — JPG · PNG · HEIC · PDF</div>
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -872,9 +872,9 @@ export function AnyGradePanel({ activeClassId }: Props) {
                     const isSplitting = splitting === f.name
                     return (
                       <div key={f.id}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 14px", borderRadius: 8, background: "#1a1a1a" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 14px", borderRadius: 8, background: "#ffffff" }}>
                           <span style={{ flex: 1, fontSize: 13, color: "#ccc", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{f.name}</span>
-                          <span style={{ fontSize: 11, color: "#555", flexShrink: 0 }}>{formatBytes(f.size)}</span>
+                          <span style={{ fontSize: 11, color: "#a1a1aa", flexShrink: 0 }}>{formatBytes(f.size)}</span>
                           {isBatchPdf && splitPreviews.length === 0 && (
                             <button
                               onClick={() => splitBatch(f)}
@@ -887,35 +887,35 @@ export function AnyGradePanel({ activeClassId }: Props) {
                           {!isBatchPdf && (
                             <span style={{ fontSize: 11, fontWeight: 600, borderRadius: 4, padding: "2px 8px", flexShrink: 0, background: "rgba(77,184,50,.18)", color: "#4DB832" }}>Ready</span>
                           )}
-                          <button onClick={() => removeFile(f.id)} style={{ background: "none", border: "none", color: "#555", fontSize: 16, cursor: "pointer", padding: 0, lineHeight: 1 }}>×</button>
+                          <button onClick={() => removeFile(f.id)} style={{ background: "none", border: "none", color: "#a1a1aa", fontSize: 16, cursor: "pointer", padding: 0, lineHeight: 1 }}>×</button>
                         </div>
 
                         {/* Split preview — shown below the batch file while pending confirmation */}
                         {isBatchPdf && splitPreviews.length > 0 && (
-                          <div style={{ marginTop: 4, padding: "12px 14px", background: "#141414", borderRadius: 8, border: "1px solid #2a2a2a" }}>
-                            <div style={{ fontSize: 11, color: "#aaa", marginBottom: 10, fontWeight: 600 }}>
+                          <div style={{ marginTop: 4, padding: "12px 14px", background: "#141414", borderRadius: 8, border: "1px solid #e4e4e7" }}>
+                            <div style={{ fontSize: 11, color: "#71717a", marginBottom: 10, fontWeight: 600 }}>
                               {splitPreviews.length} students detected — confirm to split
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 12 }}>
                               {splitPreviews.map((s, i) => (
                                 <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12 }}>
-                                  <span style={{ color: "#666", minWidth: 20, textAlign: "right" }}>{i + 1}.</span>
-                                  <span style={{ color: "#ccc", flex: 1 }}>{s.name ?? <span style={{ color: "#555" }}>Unidentified</span>}</span>
-                                  {s.section && <span style={{ color: "#555" }}>{s.section}</span>}
-                                  <span style={{ color: "#555" }}>pp {s.startPage}–{s.endPage}</span>
+                                  <span style={{ color: "#71717a", minWidth: 20, textAlign: "right" }}>{i + 1}.</span>
+                                  <span style={{ color: "#ccc", flex: 1 }}>{s.name ?? <span style={{ color: "#a1a1aa" }}>Unidentified</span>}</span>
+                                  {s.section && <span style={{ color: "#a1a1aa" }}>{s.section}</span>}
+                                  <span style={{ color: "#a1a1aa" }}>pp {s.startPage}–{s.endPage}</span>
                                 </div>
                               ))}
                             </div>
                             <div style={{ display: "flex", gap: 8 }}>
                               <button
                                 onClick={() => confirmSplit(f)}
-                                style={{ padding: "6px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600, background: "#4DB832", color: "#fff", border: "none", cursor: "pointer" }}
+                                style={{ padding: "6px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600, background: "#4DB832", color: "#18181b", border: "none", cursor: "pointer" }}
                               >
                                 Confirm split
                               </button>
                               <button
                                 onClick={() => setSplitPreviews([])}
-                                style={{ padding: "6px 14px", borderRadius: 6, fontSize: 12, background: "none", color: "#666", border: "1px solid #2a2a2a", cursor: "pointer" }}
+                                style={{ padding: "6px 14px", borderRadius: 6, fontSize: 12, background: "none", color: "#71717a", border: "1px solid #e4e4e7", cursor: "pointer" }}
                               >
                                 Cancel
                               </button>
@@ -925,7 +925,7 @@ export function AnyGradePanel({ activeClassId }: Props) {
                       </div>
                     )
                   })}
-                  <button onClick={() => fileInputRef.current?.click()} style={{ background: "none", border: "1px dashed #2a2a2a", borderRadius: 8, color: "#666", fontSize: 12, padding: "8px 14px", cursor: "pointer", textAlign: "left", marginTop: 4 }}>
+                  <button onClick={() => fileInputRef.current?.click()} style={{ background: "none", border: "1px dashed #2a2a2a", borderRadius: 8, color: "#71717a", fontSize: 12, padding: "8px 14px", cursor: "pointer", textAlign: "left", marginTop: 4 }}>
                     + Add more sheets
                   </button>
                 </div>
@@ -934,21 +934,21 @@ export function AnyGradePanel({ activeClassId }: Props) {
           )}
 
           {sheetSource === "scanner" && (
-            <div style={{ padding: "14px 16px", background: "#1a1a1a", borderRadius: 8, display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ padding: "14px 16px", background: "#ffffff", borderRadius: 8, display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#4DB832", flexShrink: 0, animation: "ag-pulse 1.4s ease-in-out infinite" }} />
               <div>
                 <div style={{ fontSize: 13, color: "#ccc", fontWeight: 500 }}>EPSON ES-400</div>
-                <div style={{ fontSize: 11, color: "#555", marginTop: 2 }}>USB · Ready · ADF 50-sheet capacity</div>
+                <div style={{ fontSize: 11, color: "#a1a1aa", marginTop: 2 }}>USB · Ready · ADF 50-sheet capacity</div>
               </div>
             </div>
           )}
 
           {sheetSource === "phone" && (
-            <div style={{ padding: "14px 16px", background: "#1a1a1a", borderRadius: 8, display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ width: 34, height: 34, borderRadius: 8, background: "#2a2a2a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>📱</div>
+            <div style={{ padding: "14px 16px", background: "#ffffff", borderRadius: 8, display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 34, height: 34, borderRadius: 8, background: "#e4e4e7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>📱</div>
               <div>
                 <div style={{ fontSize: 13, color: "#ccc", fontWeight: 500 }}>Juan&apos;s iPhone 15</div>
-                <div style={{ fontSize: 11, color: "#555", marginTop: 2 }}>WiFi Direct · Session: <span style={{ fontFamily: "monospace" }}>{sessionCode}</span></div>
+                <div style={{ fontSize: 11, color: "#a1a1aa", marginTop: 2 }}>WiFi Direct · Session: <span style={{ fontFamily: "monospace" }}>{sessionCode}</span></div>
               </div>
               <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#4DB832", flexShrink: 0, marginLeft: "auto" }} />
             </div>
@@ -994,15 +994,15 @@ export function AnyGradePanel({ activeClassId }: Props) {
           {/* Context: manual text entry (quiz / no source selected) */}
           {(akSource === null || akSource === "quiz") && (
             <div>
-              <div style={{ fontSize: 11, color: "#555", marginBottom: 8 }}>
-                Or type answers below — one per line: <span style={{ color: "#666", fontFamily: "monospace" }}>label | expected answer</span> or <span style={{ color: "#666", fontFamily: "monospace" }}>label | expected | pts</span>
+              <div style={{ fontSize: 11, color: "#a1a1aa", marginBottom: 8 }}>
+                Or type answers below — one per line: <span style={{ color: "#71717a", fontFamily: "monospace" }}>label | expected answer</span> or <span style={{ color: "#71717a", fontFamily: "monospace" }}>label | expected | pts</span>
               </div>
               <textarea
                 value={akText}
                 onChange={(e) => setAkText(e.target.value)}
                 placeholder={"1.301 | ρ = 5333.33 ft | 5\n1.302 | a = 6.83 ft/s² | 5\nQ1 | v = 12 m/s upward"}
                 rows={5}
-                style={{ width: "100%", background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 8, color: "#fff", fontSize: 12, padding: "10px 12px", outline: "none", resize: "vertical", fontFamily: "monospace", boxSizing: "border-box", lineHeight: 1.6 }}
+                style={{ width: "100%", background: "#ffffff", border: "1px solid #e4e4e7", borderRadius: 8, color: "#18181b", fontSize: 12, padding: "10px 12px", outline: "none", resize: "vertical", fontFamily: "monospace", boxSizing: "border-box", lineHeight: 1.6 }}
               />
               {problems.length > 0 && (
                 <div style={{ fontSize: 11, color: "#4DB832", marginTop: 6 }}>
@@ -1027,7 +1027,7 @@ export function AnyGradePanel({ activeClassId }: Props) {
                       Drop answer key here, or{" "}
                       <button onClick={(e) => { e.stopPropagation(); akFileRef.current?.click() }} style={{ background: "none", border: "none", color: "#4DB832", cursor: "pointer", fontSize: 13, padding: 0, textDecoration: "underline" }}>browse</button>
                     </div>
-                    <div style={{ fontSize: 11, color: "#555", marginTop: 6 }}>JPG · PNG · PDF · Word · Excel · TXT</div>
+                    <div style={{ fontSize: 11, color: "#a1a1aa", marginTop: 6 }}>JPG · PNG · PDF · Word · Excel · TXT</div>
                   </>
                 )}
               </div>
@@ -1035,7 +1035,7 @@ export function AnyGradePanel({ activeClassId }: Props) {
           )}
 
           {akSource === "scan" && (
-            <div style={{ padding: "14px 16px", background: "#1a1a1a", borderRadius: 8, display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ padding: "14px 16px", background: "#ffffff", borderRadius: 8, display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{
                 width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
                 background: scanner.status === "ready" ? "#4DB832" : scanner.status === "error" ? "#ef4444" : "#D97706",
@@ -1044,27 +1044,27 @@ export function AnyGradePanel({ activeClassId }: Props) {
               <div>
                 <div style={{ fontSize: 13, color: "#ccc", fontWeight: 500 }}>{scanner.name ?? "Waiting for scanner…"}</div>
                 {scanner.name ? (
-                  <div style={{ fontSize: 11, color: "#555", marginTop: 2 }}>{[scanner.connectionType, scanner.statusLabel, scanner.capability].filter(Boolean).join(" · ")}</div>
+                  <div style={{ fontSize: 11, color: "#a1a1aa", marginTop: 2 }}>{[scanner.connectionType, scanner.statusLabel, scanner.capability].filter(Boolean).join(" · ")}</div>
                 ) : (
-                  <div style={{ fontSize: 11, color: "#555", marginTop: 2 }}>Connect a scanner and place the answer key face-down.</div>
+                  <div style={{ fontSize: 11, color: "#a1a1aa", marginTop: 2 }}>Connect a scanner and place the answer key face-down.</div>
                 )}
               </div>
             </div>
           )}
 
           {akSource === "photo" && (
-            <div style={{ padding: "14px 16px", background: "#1a1a1a", borderRadius: 8, display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ padding: "14px 16px", background: "#ffffff", borderRadius: 8, display: "flex", flexDirection: "column", gap: 10 }}>
               {["Open AnyGrade on your phone", "Tap Scan answer key and point at the key sheet"].map((step, i) => (
                 <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: "#ccc" }}>
-                  <span style={{ width: 20, height: 20, borderRadius: "50%", background: "#2a2a2a", color: "#888", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <span style={{ width: 20, height: 20, borderRadius: "50%", background: "#e4e4e7", color: "#71717a", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     {i + 1}
                   </span>
                   {step}
                 </div>
               ))}
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4 }}>
-                <div style={{ width: 64, height: 64, background: "#2a2a2a", borderRadius: 6 }} />
-                <span style={{ fontSize: 12, color: "#555", fontFamily: "monospace" }}>Session: {sessionCode}</span>
+                <div style={{ width: 64, height: 64, background: "#e4e4e7", borderRadius: 6 }} />
+                <span style={{ fontSize: 12, color: "#a1a1aa", fontFamily: "monospace" }}>Session: {sessionCode}</span>
               </div>
             </div>
           )}
@@ -1072,16 +1072,16 @@ export function AnyGradePanel({ activeClassId }: Props) {
           {/* PTS / QUESTION — shown only after grading is complete */}
           {gradeResults !== null && akSource !== "quiz" && (
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12 }}>
-              <label style={{ fontSize: 11, color: "#666", flexShrink: 0 }}>Pts / question</label>
+              <label style={{ fontSize: 11, color: "#71717a", flexShrink: 0 }}>Pts / question</label>
               <input
                 type="number"
                 min={1}
                 value={ptsPerQuestion}
                 onChange={(e) => setPtsPerQuestion(Math.max(1, Number(e.target.value) || 1))}
-                style={{ border: "1px solid #2a2a2a", borderRadius: 7, padding: "5px 9px", fontSize: 12, background: "#1a1a1a", color: "#fff", outline: "none", width: 70, fontFamily: "inherit" }}
+                style={{ border: "1px solid #e4e4e7", borderRadius: 7, padding: "5px 9px", fontSize: 12, background: "#ffffff", color: "#18181b", outline: "none", width: 70, fontFamily: "inherit" }}
               />
               {problems.length > 0 && (
-                <span style={{ fontSize: 11, color: "#555" }}>
+                <span style={{ fontSize: 11, color: "#a1a1aa" }}>
                   max {problems.reduce((s, p) => s + p.pts, 0)} pts
                 </span>
               )}
@@ -1094,7 +1094,7 @@ export function AnyGradePanel({ activeClassId }: Props) {
           <div style={{ marginBottom: 24 }}>
             <SectionLabel>Grading Results</SectionLabel>
             {grading && (
-              <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "#888" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "#71717a" }}>
                 <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#4DB832", animation: "ag-pulse 1.4s ease-in-out infinite", flexShrink: 0 }} />
                 Grading {files.length} {files.length === 1 ? "sheet" : "sheets"}…
               </div>
@@ -1154,14 +1154,14 @@ export function AnyGradePanel({ activeClassId }: Props) {
       </div>
 
       {/* Footer */}
-      <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 32px", borderTop: "1px solid #1c1c1c", flexShrink: 0 }}>
-        <span style={{ fontSize: 11, color: "#555" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 32px", borderTop: "1px solid #e4e4e7", flexShrink: 0 }}>
+        <span style={{ fontSize: 11, color: "#a1a1aa" }}>
           {files.length > 0 ? `${files.length} ${files.length === 1 ? "sheet" : "sheets"}` : "no sheets"} · answer key: {akStatusLabel}
         </span>
         {gradeResults && (
           <button
             onClick={() => { setGradeResults(null); setFiles([]); setAkText(""); setAkFileName(null) }}
-            style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #2a2a2a", background: "none", color: "#888", fontSize: 12, cursor: "pointer" }}
+            style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #e4e4e7", background: "none", color: "#71717a", fontSize: 12, cursor: "pointer" }}
           >
             New session
           </button>
@@ -1182,3 +1182,4 @@ export function AnyGradePanel({ activeClassId }: Props) {
     </div>
   )
 }
+

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
@@ -35,13 +35,13 @@ function ResultsCard({ submissions, maxScore }: { submissions: Submission[]; max
   const passRate = Math.round((passing / scores.length) * 100)
 
   return (
-    <div style={{ background: "#1a1a1a", borderRadius: 10, marginBottom: 20 }}>
+    <div style={{ background: "#ffffff", borderRadius: 10, marginBottom: 20 }}>
       <button
         onClick={() => setExpanded(!expanded)}
-        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "12px 16px", background: "none", border: "none", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600 }}
+        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "12px 16px", background: "none", border: "none", color: "#18181b", cursor: "pointer", fontSize: 13, fontWeight: 600 }}
       >
         Class results
-        <span style={{ fontSize: 10, color: "#555" }}>{expanded ? "▲" : "▼"}</span>
+        <span style={{ fontSize: 10, color: "#a1a1aa" }}>{expanded ? "▲" : "▼"}</span>
       </button>
       {expanded && (
         <div style={{ display: "flex", gap: 0, padding: "0 16px 14px", borderTop: "1px solid #222" }}>
@@ -52,8 +52,8 @@ function ResultsCard({ submissions, maxScore }: { submissions: Submission[]; max
             { val: Math.min(...scores), lbl: "Lowest" },
           ].map((s) => (
             <div key={s.lbl} style={{ flex: 1, paddingTop: 12, textAlign: "center" }}>
-              <div style={{ fontSize: 20, fontWeight: 700, color: "#fff" }}>{s.val}</div>
-              <div style={{ fontSize: 10, color: "#666", textTransform: "uppercase", letterSpacing: ".08em", marginTop: 2 }}>{s.lbl}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: "#18181b" }}>{s.val}</div>
+              <div style={{ fontSize: 10, color: "#71717a", textTransform: "uppercase", letterSpacing: ".08em", marginTop: 2 }}>{s.lbl}</div>
             </div>
           ))}
         </div>
@@ -78,8 +78,8 @@ function TierBlock({
     <div style={{ border: `1px solid ${tier.color}`, borderRadius: 10, background: tier.bg, padding: "16px", marginBottom: 12 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
         <span style={{ color: tier.color, fontWeight: 600, fontSize: 13 }}>{tier.label}</span>
-        <span style={{ fontSize: 11, color: "#666" }}>{tier.range}</span>
-        <span style={{ marginLeft: "auto", fontSize: 11, color: "#888" }}>{students.length} student{students.length !== 1 ? "s" : ""}</span>
+        <span style={{ fontSize: 11, color: "#71717a" }}>{tier.range}</span>
+        <span style={{ marginLeft: "auto", fontSize: 11, color: "#71717a" }}>{students.length} student{students.length !== 1 ? "s" : ""}</span>
       </div>
 
       {/* Message */}
@@ -91,12 +91,12 @@ function TierBlock({
             onBlur={() => setEditing(false)}
             autoFocus
             rows={3}
-            style={{ width: "100%", background: "#111", border: "1px solid #333", borderRadius: 6, color: "#ccc", fontSize: 12, padding: "8px 10px", resize: "vertical", outline: "none", boxSizing: "border-box" }}
+            style={{ width: "100%", background: "#f9fafb", border: "1px solid #e4e4e7", borderRadius: 6, color: "#ccc", fontSize: 12, padding: "8px 10px", resize: "vertical", outline: "none", boxSizing: "border-box" }}
           />
         ) : (
           <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
-            <p style={{ flex: 1, fontSize: 12, color: "#888", margin: 0, lineHeight: 1.5 }}>{message}</p>
-            <button onClick={() => setEditing(true)} style={{ background: "none", border: "none", color: "#555", cursor: "pointer", padding: 2, flexShrink: 0 }}><PencilIcon /></button>
+            <p style={{ flex: 1, fontSize: 12, color: "#71717a", margin: 0, lineHeight: 1.5 }}>{message}</p>
+            <button onClick={() => setEditing(true)} style={{ background: "none", border: "none", color: "#a1a1aa", cursor: "pointer", padding: 2, flexShrink: 0 }}><PencilIcon /></button>
           </div>
         )}
       </div>
@@ -105,7 +105,7 @@ function TierBlock({
       {students.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 2, marginBottom: 10 }}>
           {students.map((s) => (
-            <div key={s.id} style={{ fontSize: 12, color: "#aaa", padding: "3px 0" }}>
+            <div key={s.id} style={{ fontSize: 12, color: "#71717a", padding: "3px 0" }}>
               {s.students?.full_name ?? "—"}
             </div>
           ))}
@@ -123,7 +123,7 @@ function TierBlock({
         }}
       >
         <span style={{ width: 14, height: 14, borderRadius: "50%", border: `1.5px solid ${approved ? tier.color : "#444"}`, background: approved ? tier.color : "none", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          {approved && <span style={{ color: "#fff", fontSize: 9, fontWeight: 700 }}>✓</span>}
+          {approved && <span style={{ color: "#18181b", fontSize: 9, fontWeight: 700 }}>✓</span>}
         </span>
         {approved ? "Approved" : "Approve this message"}
       </button>
@@ -179,11 +179,11 @@ export function AnySubjectPanel({ activeClass }: Props) {
 
   const fieldLblStyle: React.CSSProperties = {
     fontSize: 10, fontWeight: 600, textTransform: "uppercase",
-    letterSpacing: ".1em", color: "#666", marginBottom: 6, display: "block",
+    letterSpacing: ".1em", color: "#71717a", marginBottom: 6, display: "block",
   }
   const selectStyle: React.CSSProperties = {
-    width: "100%", background: "#1a1a1a", border: "1px solid #2a2a2a",
-    borderRadius: 8, color: "#fff", fontSize: 13, padding: "9px 12px",
+    width: "100%", background: "#ffffff", border: "1px solid #e4e4e7",
+    borderRadius: 8, color: "#18181b", fontSize: 13, padding: "9px 12px",
     appearance: "none", cursor: "pointer", outline: "none",
   }
 
@@ -195,12 +195,12 @@ export function AnySubjectPanel({ activeClass }: Props) {
 
         {/* Subject chip */}
         {activeClass?.syllabus ? (
-          <div style={{ display: "flex", alignItems: "baseline", gap: 10, padding: "10px 14px", background: "#1a1a1a", borderRadius: 8 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 10, padding: "10px 14px", background: "#ffffff", borderRadius: 8 }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: "#4DB832" }}>{activeClass.syllabus.subject_code}</span>
-            <span style={{ fontSize: 12, color: "#aaa" }}>{activeClass.syllabus.subject_title}</span>
+            <span style={{ fontSize: 12, color: "#71717a" }}>{activeClass.syllabus.subject_title}</span>
           </div>
         ) : (
-          <div style={{ fontSize: 12, color: "#555", fontStyle: "italic" }}>
+          <div style={{ fontSize: 12, color: "#a1a1aa", fontStyle: "italic" }}>
             {activeClass ? "No syllabus linked" : "Select a class from the left →"}
           </div>
         )}
@@ -228,13 +228,13 @@ export function AnySubjectPanel({ activeClass }: Props) {
       {/* Right — insights */}
       <div style={{ flex: 1, padding: "28px 32px 0 24px", overflowY: "auto" }}>
         {!selectedId && (
-          <div style={{ fontSize: 12, color: "#444", fontStyle: "italic", paddingTop: 4 }}>
+          <div style={{ fontSize: 12, color: "#a1a1aa", fontStyle: "italic", paddingTop: 4 }}>
             Select an assessment to view insights.
           </div>
         )}
 
         {selectedId && loadingSubmissions && (
-          <div style={{ fontSize: 12, color: "#555" }}>Loading…</div>
+          <div style={{ fontSize: 12, color: "#a1a1aa" }}>Loading…</div>
         )}
 
         {selectedId && !loadingSubmissions && (
@@ -248,10 +248,10 @@ export function AnySubjectPanel({ activeClass }: Props) {
                 <div key={tier.id} style={{ border: `1px solid ${tier.color}`, borderRadius: 10, background: tier.bg, padding: "14px 16px", marginBottom: 8 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, fontSize: 13 }}>
                     <span style={{ color: tier.color, fontWeight: 600 }}>{tier.label}</span>
-                    <span style={{ fontSize: 11, color: "#666" }}>{tier.range}</span>
-                    <span style={{ marginLeft: "auto", fontSize: 11, color: "#888" }}>{count} student{count !== 1 ? "s" : ""}</span>
+                    <span style={{ fontSize: 11, color: "#71717a" }}>{tier.range}</span>
+                    <span style={{ marginLeft: "auto", fontSize: 11, color: "#71717a" }}>{count} student{count !== 1 ? "s" : ""}</span>
                   </div>
-                  <div style={{ fontSize: 12, color: "#666", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  <div style={{ fontSize: 12, color: "#71717a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {DEFAULT_MESSAGES[tier.id]}
                   </div>
                 </div>
@@ -260,7 +260,7 @@ export function AnySubjectPanel({ activeClass }: Props) {
 
             <button
               onClick={() => setOverlayOpen(true)}
-              style={{ marginTop: 16, width: "100%", padding: "10px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, border: "none", background: "#4DB832", color: "#fff", cursor: "pointer" }}
+              style={{ marginTop: 16, width: "100%", padding: "10px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, border: "none", background: "#4DB832", color: "#18181b", cursor: "pointer" }}
             >
               Review &amp; send →
             </button>
@@ -270,10 +270,10 @@ export function AnySubjectPanel({ activeClass }: Props) {
 
       {/* Feedback overlay */}
       {overlayOpen && (
-        <div style={{ position: "absolute", inset: 0, background: "#111", zIndex: 10, display: "flex", flexDirection: "column", padding: "28px 32px", overflowY: "auto" }}>
+        <div style={{ position: "absolute", inset: 0, background: "#f9fafb", zIndex: 10, display: "flex", flexDirection: "column", padding: "28px 32px", overflowY: "auto" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-            <span style={{ fontSize: 15, fontWeight: 700, color: "#fff" }}>Send feedback</span>
-            <button onClick={() => setOverlayOpen(false)} style={{ background: "none", border: "none", color: "#555", fontSize: 22, cursor: "pointer" }}>×</button>
+            <span style={{ fontSize: 15, fontWeight: 700, color: "#18181b" }}>Send feedback</span>
+            <button onClick={() => setOverlayOpen(false)} style={{ background: "none", border: "none", color: "#a1a1aa", fontSize: 22, cursor: "pointer" }}>×</button>
           </div>
 
           {TIERS.map((tier) => (
@@ -305,3 +305,4 @@ export function AnySubjectPanel({ activeClass }: Props) {
     </div>
   )
 }
+
