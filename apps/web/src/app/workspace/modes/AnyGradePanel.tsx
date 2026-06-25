@@ -332,16 +332,30 @@ export function AnyGradePanel({ activeClassId }: Props) {
       // Only auto-detect on first batch (when list was empty)
       if (prev.length === 0 && next.length > 0) {
         const first = incoming[0]
-        const fd = new FormData()
-        fd.append("file", first)
-        fetch("/api/detect-sheet", { method: "POST", body: fd })
-          .then((r) => r.json())
-          .then(({ isZipGrade, hasHandwritten: hw }) => {
-            setZipgradeMode(!!isZipGrade)
-            setHasHandwritten(!!hw)
-            setZipgradeDetected("auto")
-          })
-          .catch(() => {})
+        // For large PDFs, extract page 1 client-side to stay under Vercel's 4.5MB body limit
+        const runDetect = async () => {
+          let sampleFile: File = first
+          if (first.name.endsWith(".pdf") && first.size > 2_000_000) {
+            try {
+              const { PDFDocument } = await import("pdf-lib")
+              const buf = await first.arrayBuffer()
+              const src = await PDFDocument.load(buf, { ignoreEncryption: true })
+              const dest = await PDFDocument.create()
+              const [pg] = await dest.copyPages(src, [0])
+              dest.addPage(pg)
+              const bytes = await dest.save()
+              sampleFile = new File([bytes.buffer as ArrayBuffer], "sample-page.pdf", { type: "application/pdf" })
+            } catch { /* fall through with original file */ }
+          }
+          const fd = new FormData()
+          fd.append("file", sampleFile)
+          const r = await fetch("/api/detect-sheet", { method: "POST", body: fd })
+          const { isZipGrade, hasHandwritten: hw } = await r.json()
+          setZipgradeMode(!!isZipGrade)
+          setHasHandwritten(!!hw)
+          setZipgradeDetected("auto")
+        }
+        runDetect().catch(() => {})
       }
       return [...prev, ...next]
     })
@@ -512,31 +526,30 @@ export function AnyGradePanel({ activeClassId }: Props) {
             } catch { allResults.push({ filename: sliceFile.name, results: [], rawScore: 0, maxScore: problems.length, error: `page ${i + 1} bad JSON: ${gradeText.slice(0, 100)}` }) }
           }
         } else {
-          // Handwritten: send full PDF to split-batch (Claude detects student boundaries)
-          const splitForm = new FormData()
-          splitForm.append("file", files[0].file)
-          const splitRes = await fetch("/api/split-batch", { method: "POST", body: splitForm })
-          const splitText = await splitRes.text()
-          if (!splitText) throw new Error(`split-batch returned empty response (status ${splitRes.status})`)
-          let splitJson: { students: { name: string | null; pdfBase64: string }[]; error?: string }
-          try { splitJson = JSON.parse(splitText) } catch { throw new Error(`split-batch bad JSON: ${splitText.slice(0, 200)}`) }
-          if (!splitRes.ok) throw new Error(splitJson.error ?? "Batch split failed")
-          for (let si = 0; si < splitJson.students.length; si++) {
-            const student = splitJson.students[si]
-            const sliceBlob = await fetch(`data:application/pdf;base64,${student.pdfBase64}`).then((r) => r.blob())
-            const sliceFile = new File([sliceBlob], `${student.name ?? `student-${si + 1}`}.pdf`, { type: "application/pdf" })
+          // Handwritten batch: split client-side page by page (avoids Vercel 4.5MB body limit)
+          // Note: multi-page-per-student grouping is not yet supported; each page = one student entry
+          const { PDFDocument } = await import("pdf-lib")
+          const buf = await files[0].file.arrayBuffer()
+          const srcDoc = await PDFDocument.load(buf, { ignoreEncryption: true })
+          const totalPages = srcDoc.getPageCount()
+          for (let si = 0; si < totalPages; si++) {
+            const dest = await PDFDocument.create()
+            const [page] = await dest.copyPages(srcDoc, [si])
+            dest.addPage(page)
+            const bytes = await dest.save()
+            const sliceFile = new File([bytes.buffer as ArrayBuffer], `page-${si + 1}.pdf`, { type: "application/pdf" })
             const gradeForm = new FormData()
             gradeForm.append("problems", JSON.stringify(problems))
             gradeForm.append("files", sliceFile)
-            const gradeRes = await fetch(endpoint, { method: "POST", body: gradeForm })
+            const gradeRes = await fetch("/api/grade", { method: "POST", body: gradeForm })
             const gradeText = await gradeRes.text()
-            if (!gradeText) { allResults.push({ filename: sliceFile.name, results: [], rawScore: 0, maxScore: problems.length, error: `student ${si + 1}: empty response` }); continue }
+            if (!gradeText) { allResults.push({ filename: sliceFile.name, results: [], rawScore: 0, maxScore: problems.length, error: `page ${si + 1}: empty response` }); continue }
             try {
               const gradeJson = JSON.parse(gradeText)
               if (gradeRes.ok && gradeJson.fileResults) {
-                allResults.push(...gradeJson.fileResults.map((r: ExtendedGradeFileResult) => ({ ...r, filename: student.name ?? r.filename })))
+                allResults.push(...gradeJson.fileResults.map((r: ExtendedGradeFileResult) => ({ ...r })))
               }
-            } catch { allResults.push({ filename: sliceFile.name, results: [], rawScore: 0, maxScore: problems.length, error: `student ${si + 1} bad JSON: ${gradeText.slice(0, 100)}` }) }
+            } catch { allResults.push({ filename: sliceFile.name, results: [], rawScore: 0, maxScore: problems.length, error: `page ${si + 1} bad JSON: ${gradeText.slice(0, 100)}` }) }
           }
         }
         setGradeResults(allResults)
