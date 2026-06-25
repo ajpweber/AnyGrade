@@ -268,8 +268,12 @@ function StudentRow({ file, assessmentTitle, assessmentType, activeClassId }: {
       let pdfBase64 = ""
       if (file.pdfUrl) {
         const blob = await fetch(file.pdfUrl).then((r) => r.blob())
-        const buf  = await blob.arrayBuffer()
-        pdfBase64  = btoa(String.fromCharCode(...new Uint8Array(buf)))
+        const buf  = new Uint8Array(await blob.arrayBuffer())
+        let binary = ""
+        for (let i = 0; i < buf.length; i += 8192) {
+          binary += String.fromCharCode(...buf.subarray(i, i + 8192))
+        }
+        pdfBase64 = btoa(binary)
       }
       const res = await fetch("/api/send-corrections", {
         method: "POST",
