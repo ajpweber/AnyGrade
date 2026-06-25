@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import Anthropic from "@anthropic-ai/sdk"
 import { PDFDocument } from "pdf-lib"
+import { createClient } from "@supabase/supabase-js"
 
 export const maxDuration = 300
 
@@ -52,10 +53,18 @@ export async function POST(req: NextRequest) {
 
   const contentType = req.headers.get("content-type") ?? ""
   if (contentType.includes("application/json")) {
-    // Large file path: browser uploaded to Supabase, passes fileUrl
-    const { fileUrl } = await req.json() as { fileUrl: string }
-    if (!fileUrl) return NextResponse.json({ error: "fileUrl required" }, { status: 400 })
-    const fetchRes = await fetch(fileUrl)
+    // Large file path: browser uploaded to Supabase, passes filePath (storage key)
+    const { filePath } = await req.json() as { filePath: string }
+    if (!filePath) return NextResponse.json({ error: "filePath required" }, { status: 400 })
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    )
+    const { data: urlData, error: urlError } = await supabase.storage
+      .from("batch-uploads")
+      .createSignedUrl(filePath, 120)
+    if (urlError || !urlData) return NextResponse.json({ error: `Storage URL error: ${urlError?.message}` }, { status: 500 })
+    const fetchRes = await fetch(urlData.signedUrl)
     if (!fetchRes.ok) return NextResponse.json({ error: `Failed to fetch file from storage: ${fetchRes.status}` }, { status: 500 })
     buf = await fetchRes.arrayBuffer()
   } else {
