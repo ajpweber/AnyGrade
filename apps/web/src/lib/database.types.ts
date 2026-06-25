@@ -322,6 +322,39 @@ export type Database = {
           },
         ]
       }
+      correction_tasks: {
+        Row: {
+          id: string
+          created_at: string
+          submission_id: string | null
+          ocr_result: Json | null
+          review_status: "pending" | "reviewed" | null
+          review_results: Json | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          submission_id?: string | null
+          ocr_result?: Json | null
+          review_status?: "pending" | "reviewed" | null
+          review_results?: Json | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          submission_id?: string | null
+          ocr_result?: Json | null
+          review_status?: "pending" | "reviewed" | null
+          review_results?: Json | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+        }
+        Relationships: []
+      }
       teachers: {
         Row: {
           created_at: string
