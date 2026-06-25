@@ -497,7 +497,7 @@ export function AnyGradePanel({ activeClassId }: Props) {
             const [page] = await dest.copyPages(srcDoc, [i])
             dest.addPage(page)
             const bytes = await dest.save()
-            const sliceFile = new File([bytes], `page-${i + 1}.pdf`, { type: "application/pdf" })
+            const sliceFile = new File([bytes.buffer as ArrayBuffer], `page-${i + 1}.pdf`, { type: "application/pdf" })
             const gradeForm = new FormData()
             gradeForm.append("problems", JSON.stringify(problems))
             gradeForm.append("files", sliceFile)
