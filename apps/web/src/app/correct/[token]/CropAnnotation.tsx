@@ -119,6 +119,7 @@ export const CropAnnotation = forwardRef<CropAnnotationHandle, Props>(
     const [mode, setMode]         = useState<DragMode>(null)
     const [zoomed, setZoomed]     = useState(false)
     const [showZoom, setShowZoom] = useState(false)
+    const [loadError, setLoadError] = useState<string | null>(null)
     const zoomedRef  = useRef(false)
     const dragOrigin = useRef<{ mx: number; my: number } | null>(null)
     const pageCanvas = useRef<HTMLCanvasElement | null>(null)
@@ -132,11 +133,13 @@ export const CropAnnotation = forwardRef<CropAnnotationHandle, Props>(
     useEffect(() => {
       let cancelled = false
       ;(async () => {
+        try {
         const pdfjsLib = await import("pdfjs-dist")
         pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
           "pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url,
         ).toString()
         const resp = await fetch(scanUrl)
+        if (!resp.ok) { setLoadError(`Fetch failed: ${resp.status} ${resp.statusText} — ${scanUrl.slice(0, 80)}`); return }
         const buf  = await resp.arrayBuffer()
         const pdf  = await pdfjsLib.getDocument({ data: buf }).promise
         const pg   = await pdf.getPage(page)
@@ -154,6 +157,9 @@ export const CropAnnotation = forwardRef<CropAnnotationHandle, Props>(
         cropRef.current = tight
         drawCrop()
         if (quarter.cw * quarter.ch > tight.cw * tight.ch * 1.5) setShowZoom(true)
+        } catch (err) {
+          if (!cancelled) setLoadError(err instanceof Error ? err.message : String(err))
+        }
       })()
       return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -251,6 +257,12 @@ export const CropAnnotation = forwardRef<CropAnnotationHandle, Props>(
         ? (mode.corner === "nw" || mode.corner === "se" ? "nwse-resize" : "nesw-resize")
       : mode?.type === "move" ? "grabbing"
       : zoomed ? "grab" : "default"
+
+    if (loadError) return (
+      <div style={{ padding: "12px 16px", background: "rgba(239,68,68,.08)", border: "1px solid rgba(239,68,68,.2)", borderRadius: 8, fontSize: 12, color: "#ef4444", wordBreak: "break-all" }}>
+        Could not load scan: {loadError}
+      </div>
+    )
 
     return (
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
