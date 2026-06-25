@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "at least one file required" }, { status: 400 })
   }
 
-  const maxScore = problems.reduce((sum, p) => sum + p.pts, 0)
+  const maxScore = problems.reduce((sum, p) => sum + (p.pts ?? 1), 0)
   const fileResults: GradeFileResult[] = []
 
   for (const file of files) {

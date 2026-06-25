@@ -378,8 +378,15 @@ function ResultsTable({ results, assessmentTitle, assessmentType, activeClassId 
           Some answers need manual review — marked with ?
         </div>
       )}
-      <div style={{ display: "flex", alignItems: "center", padding: "8px 16px", marginBottom: 6 }}>
+      <div style={{ padding: "6px 16px 10px", display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ fontSize: 11, color: "#555" }}>
+          {results[0]?.results.length ?? 0} items
+          {results[0]?.maxScore ? ` · ${(results[0].maxScore / Math.max(1, results[0].results.length)).toFixed(0)} pt each · ${results[0].maxScore} pts total` : ""}
+        </span>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", padding: "4px 16px", marginBottom: 6 }}>
         <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".08em", color: "#555", flex: 1 }}>Student</span>
+        <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".08em", color: "#555", marginRight: 12 }}>Score</span>
         <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".08em", color: "#555" }}>Status</span>
       </div>
       {results.map((file) => (
@@ -687,17 +694,23 @@ export function AnyGradePanel({ activeClassId }: Props) {
         const form = new FormData()
         form.append("problems", JSON.stringify(problems))
         files.forEach((f) => form.append("files", f.file))
-        const res = await fetch(endpoint, { method: "POST", body: form })
+        // Extract identity in parallel with grading
+        const identityForms = files.map((f) => { const fd = new FormData(); fd.append("file", f.file); return { name: f.file.name, fd } })
+        const [res, ...identityResps] = await Promise.all([
+          fetch(endpoint, { method: "POST", body: form }),
+          ...identityForms.map(({ fd }) => fetch("/api/extract-identity", { method: "POST", body: fd }).then((r) => r.json()).catch(() => ({}))),
+        ])
         const json = await res.json()
         if (!res.ok) throw new Error(json.error ?? "Grade request failed")
-        // Attach object URLs so StudentRow can render PdfAnnotated
+        const nameMap = new Map(identityForms.map(({ name }, i) => [name, (identityResps[i] as { name?: string | null })?.name ?? null]))
         const fileMap = new Map(files.flatMap((f) => {
           const url = URL.createObjectURL(f.file)
           return [[f.file.name, url], [f.name, url]] as [string, string][]
         }))
         const withUrls = (json.fileResults as ExtendedGradeFileResult[]).map((r) => ({
           ...r,
-          pdfUrl: fileMap.get(r.filename),
+          filename: nameMap.get(r.filename) ?? r.filename,
+          pdfUrl:   fileMap.get(r.filename),
         }))
         setGradeResults(withUrls)
       }
