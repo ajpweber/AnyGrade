@@ -12,9 +12,10 @@ export default async function CorrectionsPage() {
     .order("completed_at", { ascending: true })
 
   const tasks = (rows ?? []).map((row) => {
-    const readingCorr: Record<string, string> = row.reading_corrections ?? {}
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const gradeResult: { results?: any[] } = row.grade_result ?? {}
+    const readingCorr: Record<string, string> = (row.reading_corrections ?? {}) as any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const gradeResult: { results?: any[] } = (row.grade_result ?? {}) as any
     const results = gradeResult.results ?? []
 
     const items = results
