@@ -1,11 +1,34 @@
-import { signInWithEmail } from "./actions"
+"use client"
 
-export default async function LoginPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ sent?: string; error?: string }>
-}) {
-  const { sent, error } = await searchParams
+import { useState } from "react"
+import { createClient } from "@/lib/supabase/client"
+
+export default function LoginPage() {
+  const [email, setEmail] = useState("")
+  const [sent, setSent] = useState(false)
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError("")
+    setLoading(true)
+
+    const supabase = createClient()
+    const { error: err } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
+    })
+
+    setLoading(false)
+    if (err) {
+      setError(err.message)
+    } else {
+      setSent(true)
+    }
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-zinc-50 px-4">
@@ -20,7 +43,7 @@ export default async function LoginPage({
             Check your email — we sent you a sign-in link.
           </div>
         ) : (
-          <form action={signInWithEmail} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-zinc-700 mb-1">
                 Email address
@@ -31,20 +54,23 @@ export default async function LoginPage({
                 type="email"
                 required
                 autoComplete="email"
-                placeholder="you@school.edu.ph"
+                placeholder="you@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900"
               />
             </div>
 
             {error && (
-              <p className="text-sm text-red-600">{decodeURIComponent(error)}</p>
+              <p className="text-sm text-red-600">{error}</p>
             )}
 
             <button
               type="submit"
-              className="w-full rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 transition-colors"
+              disabled={loading}
+              className="w-full rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 transition-colors disabled:opacity-50"
             >
-              Send sign-in link
+              {loading ? "Sending…" : "Send sign-in link"}
             </button>
           </form>
         )}
