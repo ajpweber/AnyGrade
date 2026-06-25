@@ -323,39 +323,6 @@ function StudentRow({ file, assessmentTitle, assessmentType, activeClassId }: {
             </div>
           )}
 
-          {/* Answer table */}
-          {file.results.length > 0 && (
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, marginBottom: 14 }}>
-              <thead>
-                <tr style={{ borderBottom: "1px solid #2a2a2a" }}>
-                  <th style={{ textAlign: "left", padding: "5px 8px", color: "#555", fontWeight: 600 }}>Problem</th>
-                  <th style={{ textAlign: "left", padding: "5px 8px", color: "#555", fontWeight: 600 }}>Read</th>
-                  <th style={{ textAlign: "center", padding: "5px 8px", color: "#555", fontWeight: 600 }}>Result</th>
-                  <th style={{ textAlign: "center", padding: "5px 8px", color: "#555", fontWeight: 600 }}>Confidence</th>
-                </tr>
-              </thead>
-              <tbody>
-                {file.results.map((r) => (
-                  <tr key={r.label} style={{ borderBottom: "1px solid #1a1a1a", background: r.correct === null ? "rgba(217,119,6,.04)" : "none" }}>
-                    <td style={{ padding: "6px 8px", color: "#4DB832", fontWeight: 600 }}>{r.label}</td>
-                    <td style={{ padding: "6px 8px", color: r.correct === null ? "#D97706" : "#bbb" }}>{r.read ?? "—"}</td>
-                    <td style={{ padding: "6px 8px", textAlign: "center" }}>
-                      {r.correct === true ? <span style={{ color: "#4DB832", fontWeight: 700 }}>✓</span>
-                        : r.correct === false ? <span style={{ color: "#ef4444", fontWeight: 700 }}>✗</span>
-                        : <span style={{ color: "#D97706", fontWeight: 700 }}>?</span>}
-                    </td>
-                    <td style={{ padding: "6px 8px", textAlign: "center" }}>
-                      <span style={{
-                        fontSize: 10, fontWeight: 600, borderRadius: 3, padding: "1px 6px",
-                        background: r.confidence === "high" ? "rgba(77,184,50,.12)" : r.confidence === "medium" ? "rgba(217,119,6,.12)" : "rgba(239,68,68,.1)",
-                        color: r.confidence === "high" ? "#4DB832" : r.confidence === "medium" ? "#D97706" : "#ef4444",
-                      }}>{r.confidence}</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
 
           {/* Send corrected paper */}
           {status !== "error" && (
