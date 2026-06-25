@@ -29,9 +29,17 @@ const NOTATION_GUIDE = [
   ]},
 ]
 
+function cleanName(raw: string | null): string {
+  if (!raw) return "Student"
+  const stripped = raw.replace(/\.[a-zA-Z0-9]+$/, "")
+  if (!stripped.includes(" ") && stripped.includes("_")) return "Student"
+  return stripped
+}
+
 export function CorrectionClient({
   token, studentName, assessmentTitle, gradeResult, scanUrl, status: initialStatus,
 }: Props) {
+  const name = cleanName(studentName)
   const hasBbox = (r: typeof gradeResult.results[0]) =>
     (r.bboxes && r.bboxes.length > 0) || !!r.bbox
   const flagged = gradeResult.results.filter(
@@ -65,7 +73,7 @@ export function CorrectionClient({
       <div style={pageStyle}>
         <div style={cardStyle}>
           <div style={{ fontSize: 40, marginBottom: 12, color: "#4DB832" }}>✓</div>
-          <h2 style={{ margin: "0 0 8px", color: "#4DB832" }}>Thank you, {studentName ?? "Student"}!</h2>
+          <h2 style={{ margin: "0 0 8px", color: "#4DB832" }}>Thank you, {name}!</h2>
           <p style={{ color: "#666", margin: "0 0 12px" }}>Your corrections are pending teacher review.</p>
           <p style={{ color: "#555", fontSize: 13, background: "#161616", border: "0.5px solid #2a2a2a", borderRadius: 8, padding: "12px 14px", lineHeight: 1.6 }}>
             Your grade may be updated once your teacher approves.
@@ -148,7 +156,7 @@ export function CorrectionClient({
         {/* Header */}
         <div style={{ marginBottom: 24 }}>
           <div style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>{assessmentTitle}</div>
-          <h2 style={{ margin: "0 0 4px", fontSize: 20 }}>Hi {studentName ?? "Student"} — help us improve accuracy</h2>
+          <h2 style={{ margin: "0 0 4px", fontSize: 20 }}>Hi {name} — help us improve accuracy</h2>
           <p style={{ margin: 0, fontSize: 13, color: "#888" }}>
             Confirm the box location and what you actually wrote. {items.length} items.
           </p>
