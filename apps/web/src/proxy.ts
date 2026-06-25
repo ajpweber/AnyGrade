@@ -32,14 +32,14 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
-  // Redirect unauthenticated users away from /dashboard
-  if (pathname.startsWith("/dashboard") && !user) {
+  // Redirect unauthenticated users away from protected routes
+  if ((pathname.startsWith("/workspace") || pathname.startsWith("/dashboard")) && !user) {
     return NextResponse.redirect(new URL("/login", request.url))
   }
 
   // Redirect authenticated users away from /login
   if (pathname === "/login" && user) {
-    return NextResponse.redirect(new URL("/dashboard", request.url))
+    return NextResponse.redirect(new URL("/workspace", request.url))
   }
 
   return response
