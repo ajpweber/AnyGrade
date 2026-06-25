@@ -606,7 +606,7 @@ export function AnyGradePanel({ activeClassId }: Props) {
   const answerKeyReady = akSource === "file"
     ? (extractionState === "confirmed" && confirmedItems !== null && confirmedItems.length > 0) || (akFileName !== null && textProblems.length > 0)
     : textProblems.length > 0
-  const canGrade = files.length > 0 && answerKeyReady && !grading
+  const canGrade = files.length > 0 && answerKeyReady && !grading && !gradeResults
 
   const akStatusLabel = !akSource ? "not set"
     : akSource === "quiz" ? "from AnyQuiz"
@@ -715,7 +715,10 @@ export function AnyGradePanel({ activeClassId }: Props) {
         const json = await res.json()
         if (!res.ok) throw new Error(json.error ?? "Grade request failed")
         // Attach object URLs so StudentRow can render PdfAnnotated
-        const fileMap = new Map(files.map((f) => [f.name, URL.createObjectURL(f.file)]))
+        const fileMap = new Map(files.flatMap((f) => {
+          const url = URL.createObjectURL(f.file)
+          return [[f.file.name, url], [f.name, url]] as [string, string][]
+        }))
         const withUrls = (json.fileResults as ExtendedGradeFileResult[]).map((r) => ({
           ...r,
           pdfUrl: fileMap.get(r.filename),
