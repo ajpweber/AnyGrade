@@ -271,7 +271,7 @@ function StudentRow({ file, assessmentTitle, assessmentType, activeClassId }: {
         body: JSON.stringify({
           assessmentTitle: assessmentTitle || "Assessment",
           assessmentType,
-          students: [{ name: file.studentName, email, gradeResult: file, pdfBase64: "" }],
+          students: [{ name: file.filename, email, gradeResult: file, pdfBase64: "" }],
         }),
       })
       URL.revokeObjectURL(objectUrl)
