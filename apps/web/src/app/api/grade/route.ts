@@ -4,7 +4,6 @@ import type { GradeResult, GradeFileResult } from "./types"
 
 export type { GradeResult, GradeFileResult }
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 const SYSTEM = "You are a grading assistant. You MUST respond with a single raw JSON array only — no prose, no explanation, no markdown fences. Output starts with [ and ends with ]."
 
@@ -21,12 +20,12 @@ Compare to the expected answer. Accept:
 - Equivalent notation (u_t vs ut, direction shown any way)
 For multi-part expected answers (separated by ;), ALL parts must match.
 
-Also record where you found the answer: the 1-based page number and the bounding box of the answer region (the boxed/circled/underlined area). Express x, y, w, h as fractions of that page's dimensions (0.0–1.0): x and y are the top-left corner, w and h are width and height.
+Also record where you found the answer(s): for each boxed/circled/underlined region that belongs to this problem, return a separate bbox entry. A problem may have multiple distinct boxed regions (e.g. vector form AND component form, or parts a/b/c). Return one bbox object per distinct physical box — do NOT merge separate boxes into one large bbox. Express x, y, w, h as fractions of that page's dimensions (0.0–1.0): x and y are the top-left corner, w and h are width and height.
 
 Respond ONLY as a JSON array (no markdown, no fences):
-[{"label":"1.301","read":"what you see","correct":true,"confidence":"high","bbox":{"page":1,"x":0.12,"y":0.45,"w":0.22,"h":0.04}},...]
+[{"label":"1.301","read":"what you see","correct":true,"confidence":"high","bboxes":[{"page":1,"x":0.12,"y":0.45,"w":0.22,"h":0.04},{"page":1,"x":0.55,"y":0.45,"w":0.20,"h":0.04}]},...]
 
-If an answer box is not found or illegible, return "correct":null, note it in "read", and omit "bbox".`
+If no answer box is found or it is illegible, return "correct":null, note it in "read", and omit "bboxes".`
 
 function parseJSON(raw: string): Omit<GradeResult, "pts">[] { // bbox is optional and passed through
   const cleaned = raw
@@ -77,6 +76,7 @@ async function gradeFile(
 }
 
 export async function POST(req: NextRequest) {
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json({ error: "ANTHROPIC_API_KEY not configured" }, { status: 500 })
   }

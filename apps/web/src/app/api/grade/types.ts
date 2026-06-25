@@ -6,6 +6,8 @@ export type GradeResult = {
   correct: boolean | null
   confidence: "high" | "medium" | "low" | "?"
   pts: number
+  bboxes?: BBox[]   // one entry per distinct boxed region on the paper
+  /** @deprecated use bboxes */
   bbox?: BBox
 }
 
