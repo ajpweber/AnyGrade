@@ -22,14 +22,16 @@ export function CorrectionClient({
   token, studentName, assessmentTitle, gradeResult, scanUrl, status: initialStatus,
 }: Props) {
   // Flagged items first, then correct items with bboxes — 5–10 total for training
+  const hasBbox = (r: typeof gradeResult.results[0]) =>
+    (r.bboxes && r.bboxes.length > 0) || !!r.bbox
   const flagged = gradeResult.results.filter(
-    (r) => (r.correct === false || r.correct === null) && r.bbox,
+    (r) => (r.correct === false || r.correct === null) && hasBbox(r),
   )
-  const correct = gradeResult.results.filter((r) => r.correct === true && r.bbox)
+  const correct = gradeResult.results.filter((r) => r.correct === true && hasBbox(r))
   const items   = [...flagged, ...correct].slice(0, 10)
 
   const [step, setStep]           = useState(0)
-  const [corrections, setCorr]    = useState<Record<string, BBox>>({})
+  const [corrections, setCorr]    = useState<Record<string, BBox[]>>({})
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone]           = useState(initialStatus === "completed")
 
@@ -64,7 +66,7 @@ export function CorrectionClient({
   const current = items[step]
   const isLast  = step === items.length - 1
 
-  function handleConfirm(corrected: BBox) {
+  function handleConfirm(corrected: BBox[]) {
     setCorr((prev) => ({ ...prev, [current.label]: corrected }))
     if (!isLast) {
       setStep((s) => s + 1)
@@ -72,11 +74,10 @@ export function CorrectionClient({
   }
 
   async function handleSubmit() {
-    // Confirm current item if not yet confirmed
     const allCorr = { ...corrections }
     if (!allCorr[current.label]) {
-      // Use unmodified bbox as-is
-      if (current.bbox) allCorr[current.label] = current.bbox
+      const boxes = current.bboxes ?? (current.bbox ? [current.bbox] : undefined)
+      if (boxes) allCorr[current.label] = boxes
     }
 
     setSubmitting(true)
@@ -135,17 +136,20 @@ export function CorrectionClient({
         </div>
 
         {/* Crop drag area */}
-        {current.bbox && (
-          <CropAnnotation
-            key={current.label}
-            scanUrl={scanUrl}
-            page={current.bbox.page}
-            bbox={current.bbox}
-            label={current.label}
-            color={ITEM_COLOR(current.correct)}
-            onConfirm={handleConfirm}
-          />
-        )}
+        {(() => {
+          const boxes = current.bboxes ?? (current.bbox ? [current.bbox] : undefined)
+          return boxes && boxes.length > 0 ? (
+            <CropAnnotation
+              key={current.label}
+              scanUrl={scanUrl}
+              page={boxes[0].page}
+              bboxes={boxes}
+              label={current.label}
+              color={ITEM_COLOR(current.correct)}
+              onConfirm={handleConfirm}
+            />
+          ) : null
+        })()}
 
         {/* Submit — shown after last item is confirmed */}
         {(isLast && corrections[current.label]) || confirmedCount === items.length ? (

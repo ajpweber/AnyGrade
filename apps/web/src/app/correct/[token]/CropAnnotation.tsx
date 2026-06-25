@@ -6,68 +6,87 @@ import type { BBox } from "@/app/api/grade/types"
 type Props = {
   scanUrl: string
   page: number        // 1-based
-  bbox: BBox
+  bboxes: BBox[]      // one per distinct boxed region
   label: string
   color: string
-  onConfirm: (corrected: BBox) => void
+  onConfirm: (corrected: BBox[]) => void
 }
 
 type DragMode =
-  | { type: "move" }
-  | { type: "resize"; corner: "nw" | "ne" | "se" | "sw" }
+  | { type: "move";   idx: number }
+  | { type: "resize"; idx: number; corner: "nw" | "ne" | "se" | "sw" }
   | { type: "pan" }
   | null
 
-// Tight crop: padding around bbox in actual page pixels (square crop, no distortion)
 const PADDING_PX   = 80
-const DISPLAY_SIZE = 420   // canvas px (square)
-const HANDLE       = 12    // corner handle hit area px
-const BLANK_THRESH = 0.65  // fraction of near-white pixels that triggers zoom button
+const DISPLAY_SIZE = 420
+const HANDLE       = 12
 
 function clamp(v: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, v)) }
 
-// Square-pixel crop (no distortion on square canvas) centered on lb
-function tightCrop(lb: BBox, pageW: number, pageH: number) {
-  const bboxPxW  = lb.w * pageW
-  const bboxPxH  = lb.h * pageH
+function unionBBox(boxes: BBox[]): BBox {
+  const x  = Math.min(...boxes.map(b => b.x))
+  const y  = Math.min(...boxes.map(b => b.y))
+  const x2 = Math.max(...boxes.map(b => b.x + b.w))
+  const y2 = Math.max(...boxes.map(b => b.y + b.h))
+  return { page: boxes[0].page, x, y, w: x2 - x, h: y2 - y }
+}
+
+function tightCrop(boxes: BBox[], pageW: number, pageH: number) {
+  const u        = unionBBox(boxes)
+  const bboxPxW  = u.w * pageW
+  const bboxPxH  = u.h * pageH
   const halfSize = Math.max(bboxPxW, bboxPxH) / 2 + PADDING_PX
   const cw = Math.min(1, (halfSize * 2) / pageW)
   const ch = Math.min(1, (halfSize * 2) / pageH)
-  const cx = clamp((lb.x + lb.w / 2) - cw / 2, 0, 1 - cw)
-  const cy = clamp((lb.y + lb.h / 2) - ch / 2, 0, 1 - ch)
+  const cx = clamp((u.x + u.w / 2) - cw / 2, 0, 1 - cw)
+  const cy = clamp((u.y + u.h / 2) - ch / 2, 0, 1 - ch)
   return { cx, cy, cw, ch }
 }
 
-// 1/4-page square-pixel crop centered on lb
-// S = sqrt(pageW * pageH) / 2 → cw*pageW = ch*pageH = S, area = S²/(pageW*pageH) ≈ 1/4
-function quarterCrop(lb: BBox, pageW: number, pageH: number) {
+function quarterCrop(boxes: BBox[], pageW: number, pageH: number) {
+  const u  = unionBBox(boxes)
   const S  = Math.sqrt(pageW * pageH) / 2
-  const cw = S / pageW   // ≤ 1 for any realistic page
+  const cw = S / pageW
   const ch = S / pageH
-  const cx = clamp((lb.x + lb.w / 2) - cw / 2, 0, 1 - cw)
-  const cy = clamp((lb.y + lb.h / 2) - ch / 2, 0, 1 - ch)
+  const cx = clamp((u.x + u.w / 2) - cw / 2, 0, 1 - cw)
+  const cy = clamp((u.y + u.h / 2) - ch / 2, 0, 1 - ch)
   return { cx, cy, cw, ch }
 }
 
-function hitMode(
+function hitTest(
   mx: number, my: number,
-  bx: number, by: number, bw: number, bh: number,
+  boxes: BBox[],
+  crop: { cx: number; cy: number; cw: number; ch: number },
+  sz: number,
 ): DragMode {
-  const nearCorner = (px: number, py: number) =>
-    Math.abs(mx - px) <= HANDLE && Math.abs(my - py) <= HANDLE
-  if (nearCorner(bx,      by))      return { type: "resize", corner: "nw" }
-  if (nearCorner(bx + bw, by))      return { type: "resize", corner: "ne" }
-  if (nearCorner(bx + bw, by + bh)) return { type: "resize", corner: "se" }
-  if (nearCorner(bx,      by + bh)) return { type: "resize", corner: "sw" }
-  if (mx >= bx - 8 && mx <= bx + bw + 8 && my >= by - 8 && my <= by + bh + 8)
-    return { type: "move" }
+  // Check each box, last (top-drawn) first for natural layering
+  for (let i = boxes.length - 1; i >= 0; i--) {
+    const b  = boxes[i]
+    const { cx, cy, cw, ch } = crop
+    const bx = ((b.x - cx) / cw) * sz
+    const by = ((b.y - cy) / ch) * sz
+    const bw = (b.w / cw) * sz
+    const bh = (b.h / ch) * sz
+
+    const nearCorner = (px: number, py: number) =>
+      Math.abs(mx - px) <= HANDLE && Math.abs(my - py) <= HANDLE
+    if (nearCorner(bx,      by))      return { type: "resize", idx: i, corner: "nw" }
+    if (nearCorner(bx + bw, by))      return { type: "resize", idx: i, corner: "ne" }
+    if (nearCorner(bx + bw, by + bh)) return { type: "resize", idx: i, corner: "se" }
+    if (nearCorner(bx,      by + bh)) return { type: "resize", idx: i, corner: "sw" }
+    if (mx >= bx - 8 && mx <= bx + bw + 8 && my >= by - 8 && my <= by + bh + 8)
+      return { type: "move", idx: i }
+  }
   return { type: "pan" }
 }
 
 function applyDelta(
-  mode: DragMode, lb: BBox, crop: { cx: number; cy: number; cw: number; ch: number },
+  mode: DragMode,
+  boxes: BBox[],
+  crop: { cx: number; cy: number; cw: number; ch: number },
   dx: number, dy: number, sz: number,
-): { lb: BBox; crop: typeof crop } {
+): { boxes: BBox[]; crop: typeof crop } {
   const MIN = 0.01
   const dfx = (dx / sz) * crop.cw
   const dfy = (dy / sz) * crop.ch
@@ -75,18 +94,19 @@ function applyDelta(
   if (mode?.type === "pan") {
     const cx = clamp(crop.cx - dfx, 0, 1 - crop.cw)
     const cy = clamp(crop.cy - dfy, 0, 1 - crop.ch)
-    return { lb, crop: { ...crop, cx, cy } }
+    return { boxes, crop: { ...crop, cx, cy } }
   }
 
   if (mode?.type === "move") {
-    return {
-      lb: { ...lb, x: clamp(lb.x + dfx, 0, 1 - lb.w), y: clamp(lb.y + dfy, 0, 1 - lb.h) },
-      crop,
-    }
+    const b   = boxes[mode.idx]
+    const nb  = { ...b, x: clamp(b.x + dfx, 0, 1 - b.w), y: clamp(b.y + dfy, 0, 1 - b.h) }
+    const out = boxes.map((box, i) => i === mode.idx ? nb : box)
+    return { boxes: out, crop }
   }
 
   if (mode?.type === "resize") {
-    let { x, y, w, h } = lb
+    const b   = boxes[mode.idx]
+    let { x, y, w, h } = b
     switch (mode.corner) {
       case "nw": x += dfx; y += dfy; w -= dfx; h -= dfy; break
       case "ne":            y += dfy; w += dfx; h -= dfy; break
@@ -95,34 +115,25 @@ function applyDelta(
     }
     w = Math.max(MIN, w); h = Math.max(MIN, h)
     x = clamp(x, 0, 1 - w); y = clamp(y, 0, 1 - h)
-    return { lb: { ...lb, x, y, w, h }, crop }
+    const out = boxes.map((box, i) => i === mode.idx ? { ...b, x, y, w, h } : box)
+    return { boxes: out, crop }
   }
 
-  return { lb, crop }
+  return { boxes, crop }
 }
 
-function blankFraction(canvas: HTMLCanvasElement): number {
-  const ctx = canvas.getContext("2d")!
-  const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height)
-  let white = 0
-  for (let i = 0; i < data.length; i += 4) {
-    if (data[i] > 220 && data[i + 1] > 220 && data[i + 2] > 220) white++
-  }
-  return white / (data.length / 4)
-}
-
-export function CropAnnotation({ scanUrl, page, bbox, label, color, onConfirm }: Props) {
+export function CropAnnotation({ scanUrl, page, bboxes, label, color, onConfirm }: Props) {
   const canvasRef    = useRef<HTMLCanvasElement>(null)
   const [mode, setMode]         = useState<DragMode>(null)
   const [zoomed, setZoomed]     = useState(false)
   const [showZoom, setShowZoom] = useState(false)
-  const zoomedRef    = useRef(false)
-  const dragOrigin   = useRef<{ mx: number; my: number } | null>(null)
-  const pageCanvas   = useRef<HTMLCanvasElement | null>(null)
-  const pageWRef     = useRef(0)
-  const pageHRef     = useRef(0)
-  const cropRef      = useRef({ cx: 0, cy: 0, cw: 0, ch: 0 })
-  const liveBox      = useRef<BBox>({ ...bbox })
+  const zoomedRef  = useRef(false)
+  const dragOrigin = useRef<{ mx: number; my: number } | null>(null)
+  const pageCanvas = useRef<HTMLCanvasElement | null>(null)
+  const pageWRef   = useRef(0)
+  const pageHRef   = useRef(0)
+  const cropRef    = useRef({ cx: 0, cy: 0, cw: 0, ch: 0 })
+  const liveBoxes  = useRef<BBox[]>([...bboxes])
 
   useEffect(() => {
     let cancelled = false
@@ -146,18 +157,20 @@ export function CropAnnotation({ scanUrl, page, bbox, label, color, onConfirm }:
       pageCanvas.current = pc
       pageWRef.current   = pc.width
       pageHRef.current   = pc.height
-      liveBox.current    = { ...bbox }
+      liveBoxes.current  = [...bboxes]
 
-      cropRef.current = tightCrop(bbox, pc.width, pc.height)
+      const tight   = tightCrop(bboxes, pc.width, pc.height)
+      const quarter = quarterCrop(bboxes, pc.width, pc.height)
+      cropRef.current = tight
       drawCrop()
 
-      if (canvasRef.current && blankFraction(canvasRef.current) > BLANK_THRESH) {
+      if (quarter.cw * quarter.ch > tight.cw * tight.ch * 1.5) {
         setShowZoom(true)
       }
     })()
     return () => { cancelled = true }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scanUrl, page, bbox])
+  }, [scanUrl, page, bboxes])
 
   function drawCrop() {
     const canvas = canvasRef.current
@@ -170,27 +183,32 @@ export function CropAnnotation({ scanUrl, page, bbox, label, color, onConfirm }:
     ctx.clearRect(0, 0, sz, sz)
     ctx.drawImage(pc, cx * pc.width, cy * pc.height, cw * pc.width, ch * pc.height, 0, 0, sz, sz)
 
-    const lb = liveBox.current
-    const bx = ((lb.x - cx) / cw) * sz
-    const by = ((lb.y - cy) / ch) * sz
-    const bw = (lb.w / cw) * sz
-    const bh = (lb.h / ch) * sz
+    for (let i = 0; i < liveBoxes.current.length; i++) {
+      const b  = liveBoxes.current[i]
+      const bx = ((b.x - cx) / cw) * sz
+      const by = ((b.y - cy) / ch) * sz
+      const bw = (b.w / cw) * sz
+      const bh = (b.h / ch) * sz
 
-    ctx.strokeStyle = color
-    ctx.lineWidth   = 2.5
-    ctx.strokeRect(bx, by, bw, bh)
+      ctx.strokeStyle = color
+      ctx.lineWidth   = 2.5
+      ctx.strokeRect(bx, by, bw, bh)
 
-    ctx.fillStyle = color
-    for (const [hx, hy] of [[bx, by], [bx + bw, by], [bx + bw, by + bh], [bx, by + bh]]) {
-      ctx.fillRect(hx - HANDLE / 2, hy - HANDLE / 2, HANDLE, HANDLE)
+      ctx.fillStyle = color
+      for (const [hx, hy] of [[bx, by], [bx + bw, by], [bx + bw, by + bh], [bx, by + bh]]) {
+        ctx.fillRect(hx - HANDLE / 2, hy - HANDLE / 2, HANDLE, HANDLE)
+      }
+
+      // Label only on first box
+      if (i === 0) {
+        ctx.font      = "bold 13px sans-serif"
+        ctx.fillStyle = "rgba(0,0,0,0.65)"
+        const tw = ctx.measureText(label).width + 10
+        ctx.fillRect(bx, Math.max(0, by - 20), tw, 18)
+        ctx.fillStyle = color
+        ctx.fillText(label, bx + 5, Math.max(14, by - 6))
+      }
     }
-
-    ctx.font = "bold 13px sans-serif"
-    ctx.fillStyle = "rgba(0,0,0,0.65)"
-    const tw = ctx.measureText(label).width + 10
-    ctx.fillRect(bx, Math.max(0, by - 20), tw, 18)
-    ctx.fillStyle = color
-    ctx.fillText(label, bx + 5, Math.max(14, by - 6))
 
     ctx.font      = "11px sans-serif"
     ctx.fillStyle = "rgba(255,255,255,0.4)"
@@ -215,14 +233,7 @@ export function CropAnnotation({ scanUrl, page, bbox, label, color, onConfirm }:
   function onDown(e: React.MouseEvent | React.TouchEvent) {
     e.preventDefault()
     const { mx, my } = pointerCoords(e)
-    const lb = liveBox.current
-    const { cx, cy, cw, ch } = cropRef.current
-    const sz = DISPLAY_SIZE
-    const bx = ((lb.x - cx) / cw) * sz
-    const by = ((lb.y - cy) / ch) * sz
-    const bw = (lb.w / cw) * sz
-    const bh = (lb.h / ch) * sz
-    const m  = hitMode(mx, my, bx, by, bw, bh)
+    const m = hitTest(mx, my, liveBoxes.current, cropRef.current, DISPLAY_SIZE)
     setMode(m?.type === "pan" && !zoomedRef.current ? null : m)
     dragOrigin.current = { mx, my }
   }
@@ -233,8 +244,8 @@ export function CropAnnotation({ scanUrl, page, bbox, label, color, onConfirm }:
     const { mx, my } = pointerCoords(e)
     const dx = mx - dragOrigin.current.mx
     const dy = my - dragOrigin.current.my
-    const { lb, crop } = applyDelta(mode, liveBox.current, cropRef.current, dx, dy, DISPLAY_SIZE)
-    liveBox.current    = lb
+    const { boxes, crop } = applyDelta(mode, liveBoxes.current, cropRef.current, dx, dy, DISPLAY_SIZE)
+    liveBoxes.current  = boxes
     cropRef.current    = crop
     dragOrigin.current = { mx, my }
     drawCrop()
@@ -247,15 +258,14 @@ export function CropAnnotation({ scanUrl, page, bbox, label, color, onConfirm }:
   }
 
   function doZoomOut() {
-    cropRef.current   = quarterCrop(liveBox.current, pageWRef.current, pageHRef.current)
+    cropRef.current   = quarterCrop(liveBoxes.current, pageWRef.current, pageHRef.current)
     zoomedRef.current = true
     setZoomed(true)
     requestAnimationFrame(() => drawCrop())
   }
 
   function doZoomIn() {
-    // Recompute tight crop around where the bbox is now, not original position
-    cropRef.current   = tightCrop(liveBox.current, pageWRef.current, pageHRef.current)
+    cropRef.current   = tightCrop(liveBoxes.current, pageWRef.current, pageHRef.current)
     zoomedRef.current = false
     setZoomed(false)
     requestAnimationFrame(() => drawCrop())
@@ -302,7 +312,7 @@ export function CropAnnotation({ scanUrl, page, bbox, label, color, onConfirm }:
           )}
         </div>
         <button
-          onClick={() => onConfirm(liveBox.current)}
+          onClick={() => onConfirm(liveBoxes.current)}
           style={{ padding: "10px 28px", borderRadius: 8, background: "#4DB832", color: "#fff", border: "none", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
         >
           Confirm position

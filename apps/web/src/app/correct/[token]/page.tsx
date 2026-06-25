@@ -3,12 +3,11 @@ import { notFound } from "next/navigation"
 import { CorrectionClient } from "./CorrectionClient"
 import type { GradeFileResult } from "@/app/api/grade/types"
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-)
-
 export default async function CorrectionPage({ params }: { params: Promise<{ token: string }> }) {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
   const { token } = await params
 
   const { data: task, error } = await supabase

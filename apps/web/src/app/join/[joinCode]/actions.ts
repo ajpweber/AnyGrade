@@ -2,11 +2,6 @@
 
 import { createClient } from "@supabase/supabase-js"
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-)
-
 type JoinArgs = {
   classId: string
   name: string
@@ -14,6 +9,10 @@ type JoinArgs = {
 }
 
 export async function joinClass({ classId, name, email }: JoinArgs) {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
   // Check if this email is already registered in this class
   const { data: existing } = await supabase
     .from("students")

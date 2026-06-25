@@ -2,12 +2,11 @@ import { createClient } from "@supabase/supabase-js"
 import { notFound } from "next/navigation"
 import { JoinForm } from "./JoinForm"
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-)
-
 export default async function JoinPage({ params }: { params: Promise<{ joinCode: string }> }) {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
   const { joinCode } = await params
 
   const { data: cls } = await supabase
