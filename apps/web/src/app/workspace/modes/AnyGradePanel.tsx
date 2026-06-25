@@ -484,38 +484,60 @@ export function AnyGradePanel({ activeClassId }: Props) {
       // For batch PDFs: split into per-student slices first, then grade each slice
       const isBatchPdf = files.length === 1 && files[0].file.name.endsWith(".pdf") && files[0].file.size > 2_000_000
       if (isBatchPdf) {
-        // ZipGrade: split by page (1 sheet = 1 page), no Claude needed
-        // Handwritten: use split-batch (Claude detects student boundaries by handwriting)
-        const splitEndpoint = zipgradeMode ? "/api/split-pages" : "/api/split-batch"
-        const splitForm = new FormData()
-        splitForm.append("file", files[0].file)
-        const splitRes = await fetch(splitEndpoint, { method: "POST", body: splitForm })
-        const splitText = await splitRes.text()
-        if (!splitText) throw new Error(`${splitEndpoint} returned empty response (status ${splitRes.status})`)
-        let splitJson: { students: { name: string | null; pdfBase64: string }[]; error?: string }
-        try { splitJson = JSON.parse(splitText) } catch { throw new Error(`${splitEndpoint} bad JSON: ${splitText.slice(0, 200)}`) }
-        if (!splitRes.ok) throw new Error(splitJson.error ?? "Batch split failed")
-        const { students } = splitJson
         // Grade each student slice
         const allResults: ExtendedGradeFileResult[] = []
-        for (let si = 0; si < students.length; si++) {
-          const student = students[si]
-          const sliceBlob = await fetch(`data:application/pdf;base64,${student.pdfBase64}`).then((r) => r.blob())
-          const sliceFile = new File([sliceBlob], `${student.name ?? `page-${si + 1}`}.pdf`, { type: "application/pdf" })
-          const gradeForm = new FormData()
-          gradeForm.append("problems", JSON.stringify(problems))
-          gradeForm.append("files", sliceFile)
-          const gradeRes = await fetch(endpoint, { method: "POST", body: gradeForm })
-          const gradeText = await gradeRes.text()
-          if (!gradeText) { allResults.push({ filename: sliceFile.name, results: [], rawScore: 0, maxScore: problems.length, error: `page ${si + 1}: empty response` }); continue }
-          try {
-            const gradeJson = JSON.parse(gradeText)
-            if (gradeRes.ok && gradeJson.fileResults) {
-              allResults.push(...gradeJson.fileResults.map((r: ExtendedGradeFileResult) => ({
-                ...r, filename: student.name ?? r.filename,
-              })))
-            }
-          } catch { allResults.push({ filename: sliceFile.name, results: [], rawScore: 0, maxScore: problems.length, error: `page ${si + 1} bad JSON: ${gradeText.slice(0, 100)}` }) }
+        if (zipgradeMode) {
+          // ZipGrade: split client-side (avoids Vercel 4.5MB body limit on server)
+          const { PDFDocument } = await import("pdf-lib")
+          const buf = await files[0].file.arrayBuffer()
+          const srcDoc = await PDFDocument.load(buf, { ignoreEncryption: true })
+          const totalPages = srcDoc.getPageCount()
+          for (let i = 0; i < totalPages; i++) {
+            const dest = await PDFDocument.create()
+            const [page] = await dest.copyPages(srcDoc, [i])
+            dest.addPage(page)
+            const bytes = await dest.save()
+            const sliceFile = new File([bytes], `page-${i + 1}.pdf`, { type: "application/pdf" })
+            const gradeForm = new FormData()
+            gradeForm.append("problems", JSON.stringify(problems))
+            gradeForm.append("files", sliceFile)
+            const gradeRes = await fetch(endpoint, { method: "POST", body: gradeForm })
+            const gradeText = await gradeRes.text()
+            if (!gradeText) { allResults.push({ filename: sliceFile.name, results: [], rawScore: 0, maxScore: problems.length, error: `page ${i + 1}: empty response` }); continue }
+            try {
+              const gradeJson = JSON.parse(gradeText)
+              if (gradeRes.ok && gradeJson.fileResults) {
+                allResults.push(...gradeJson.fileResults.map((r: ExtendedGradeFileResult) => ({ ...r })))
+              }
+            } catch { allResults.push({ filename: sliceFile.name, results: [], rawScore: 0, maxScore: problems.length, error: `page ${i + 1} bad JSON: ${gradeText.slice(0, 100)}` }) }
+          }
+        } else {
+          // Handwritten: send full PDF to split-batch (Claude detects student boundaries)
+          const splitForm = new FormData()
+          splitForm.append("file", files[0].file)
+          const splitRes = await fetch("/api/split-batch", { method: "POST", body: splitForm })
+          const splitText = await splitRes.text()
+          if (!splitText) throw new Error(`split-batch returned empty response (status ${splitRes.status})`)
+          let splitJson: { students: { name: string | null; pdfBase64: string }[]; error?: string }
+          try { splitJson = JSON.parse(splitText) } catch { throw new Error(`split-batch bad JSON: ${splitText.slice(0, 200)}`) }
+          if (!splitRes.ok) throw new Error(splitJson.error ?? "Batch split failed")
+          for (let si = 0; si < splitJson.students.length; si++) {
+            const student = splitJson.students[si]
+            const sliceBlob = await fetch(`data:application/pdf;base64,${student.pdfBase64}`).then((r) => r.blob())
+            const sliceFile = new File([sliceBlob], `${student.name ?? `student-${si + 1}`}.pdf`, { type: "application/pdf" })
+            const gradeForm = new FormData()
+            gradeForm.append("problems", JSON.stringify(problems))
+            gradeForm.append("files", sliceFile)
+            const gradeRes = await fetch(endpoint, { method: "POST", body: gradeForm })
+            const gradeText = await gradeRes.text()
+            if (!gradeText) { allResults.push({ filename: sliceFile.name, results: [], rawScore: 0, maxScore: problems.length, error: `student ${si + 1}: empty response` }); continue }
+            try {
+              const gradeJson = JSON.parse(gradeText)
+              if (gradeRes.ok && gradeJson.fileResults) {
+                allResults.push(...gradeJson.fileResults.map((r: ExtendedGradeFileResult) => ({ ...r, filename: student.name ?? r.filename })))
+              }
+            } catch { allResults.push({ filename: sliceFile.name, results: [], rawScore: 0, maxScore: problems.length, error: `student ${si + 1} bad JSON: ${gradeText.slice(0, 100)}` }) }
+          }
         }
         setGradeResults(allResults)
       } else {
