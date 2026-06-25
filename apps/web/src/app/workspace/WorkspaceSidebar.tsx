@@ -31,7 +31,7 @@ function SubjectIcon() {
 
 const MODES: { id: Mode; label: string; icon: React.ReactNode }[] = [
   { id: "quiz",    label: "AnyTest",    icon: <QuizIcon /> },
-  { id: "grade",   label: "AnyGrade",   icon: <GradeIcon /> },
+  { id: "grade",   label: "AnyCheck",   icon: <GradeIcon /> },
   { id: "subject", label: "AnySubject", icon: <SubjectIcon /> },
 ]
 
