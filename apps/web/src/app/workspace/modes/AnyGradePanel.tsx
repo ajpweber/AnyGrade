@@ -5,6 +5,7 @@ import type { AKSource, UploadFile, ScannerState } from "../types"
 import { formatBytes, INITIAL_SCANNER_STATE } from "../types"
 import type { GradeFileResult } from "@/app/api/grade/route"
 import type { ExtractKeyItem, ExtractKeyResult } from "@/app/api/extract-key/route"
+import { PdfAnnotated } from "./PdfAnnotated"
 
 type Props = {
   activeClassId: string | null
@@ -219,13 +220,12 @@ function parseAnswerKeyText(text: string): { label: string; expected: string }[]
 }
 
 // ── Results table ──────────────────────────────────────────────────────────
-type ExtendedGradeFileResult = GradeFileResult & { needsManual?: string[]; studentName?: string | null }
+type ExtendedGradeFileResult = GradeFileResult & { needsManual?: string[]; pdfUrl?: string }
 
-type StudentStatus = "graded" | "needs-review" | "error" | "unidentified"
+type StudentStatus = "graded" | "needs-review" | "error"
 
 function studentStatus(file: ExtendedGradeFileResult): StudentStatus {
   if (file.error) return "error"
-  if (!file.studentName) return "unidentified"
   if (file.results.some((r) => r.correct === null)) return "needs-review"
   return "graded"
 }
@@ -235,7 +235,6 @@ function StatusBadge({ status }: { status: StudentStatus }) {
     "graded":       { bg: "rgba(77,184,50,.12)",   color: "#4DB832", label: "Graded" },
     "needs-review": { bg: "rgba(217,119,6,.12)",   color: "#D97706", label: "Needs review" },
     "error":        { bg: "rgba(239,68,68,.12)",   color: "#ef4444", label: "Error" },
-    "unidentified": { bg: "rgba(100,100,100,.15)", color: "#666",    label: "Unidentified" },
   }
   const s = styles[status]
   return (
@@ -259,9 +258,7 @@ function StudentRow({ file, assessmentTitle, assessmentType, activeClassId }: {
   const status   = studentStatus(file)
   const rawScore = file.rawScore ?? 0
   const maxScore = file.maxScore ?? 0
-  const name     = file.studentName ?? file.filename
-
-  const wrongOrNull = file.results.filter((r) => r.correct === false || r.correct === null)
+  const name     = file.filename
 
   async function handleSend() {
     if (!email || sending) return
@@ -291,10 +288,10 @@ function StudentRow({ file, assessmentTitle, assessmentType, activeClassId }: {
         style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", cursor: "pointer", background: "#161616" }}
       >
         <span style={{ fontSize: 13, color: "#555", width: 14 }}>{open ? "▾" : "▸"}</span>
-        <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: status === "unidentified" ? "#555" : "#ddd", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "#ddd", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {name}
         </div>
-        {status !== "error" && status !== "unidentified" && (
+        {status !== "error" && (
           <span style={{
             fontSize: 13, fontWeight: 700, borderRadius: 6, padding: "3px 10px",
             background: status === "graded" ? "rgba(77,184,50,.1)" : "rgba(217,119,6,.1)",
@@ -314,9 +311,10 @@ function StudentRow({ file, assessmentTitle, assessmentType, activeClassId }: {
               {file.error}
             </div>
           )}
-          {status === "unidentified" && (
-            <div style={{ fontSize: 12, color: "#888", padding: "8px 12px", background: "rgba(100,100,100,.08)", borderRadius: 6, marginBottom: 12 }}>
-              Could not read student name from this sheet. Grade held at 0 until identity is confirmed.
+          {/* Annotated PDF */}
+          {file.pdfUrl && (
+            <div style={{ marginBottom: 16 }}>
+              <PdfAnnotated objectUrl={file.pdfUrl} results={file.results} />
             </div>
           )}
           {file.needsManual && file.needsManual.length > 0 && (
@@ -658,7 +656,8 @@ export function AnyGradePanel({ activeClassId }: Props) {
             try {
               const gradeJson = JSON.parse(gradeText)
               if (gradeRes.ok && gradeJson.fileResults) {
-                allResults.push(...gradeJson.fileResults.map((r: ExtendedGradeFileResult) => ({ ...r })))
+                const sliceUrl = URL.createObjectURL(sliceFile)
+                allResults.push(...gradeJson.fileResults.map((r: ExtendedGradeFileResult) => ({ ...r, pdfUrl: sliceUrl })))
               }
             } catch { allResults.push({ filename: sliceFile.name, results: [], rawScore: 0, maxScore: problems.length, error: `page ${i + 1} bad JSON: ${gradeText.slice(0, 100)}` }) }
           }
@@ -701,7 +700,8 @@ export function AnyGradePanel({ activeClassId }: Props) {
             try {
               const gradeJson = JSON.parse(gradeText)
               if (gradeRes.ok && gradeJson.fileResults) {
-                allResults.push(...gradeJson.fileResults.map((r: ExtendedGradeFileResult) => ({ ...r, filename: student.name ?? r.filename })))
+                const sliceUrl = URL.createObjectURL(sliceFile)
+                allResults.push(...gradeJson.fileResults.map((r: ExtendedGradeFileResult) => ({ ...r, filename: student.name ?? r.filename, pdfUrl: sliceUrl })))
               }
             } catch { allResults.push({ filename: sliceFile.name, results: [], rawScore: 0, maxScore: problems.length, error: `${label} bad JSON: ${gradeText.slice(0, 100)}` }) }
           }
@@ -714,7 +714,13 @@ export function AnyGradePanel({ activeClassId }: Props) {
         const res = await fetch(endpoint, { method: "POST", body: form })
         const json = await res.json()
         if (!res.ok) throw new Error(json.error ?? "Grade request failed")
-        setGradeResults(json.fileResults)
+        // Attach object URLs so StudentRow can render PdfAnnotated
+        const fileMap = new Map(files.map((f) => [f.name, URL.createObjectURL(f.file)]))
+        const withUrls = (json.fileResults as ExtendedGradeFileResult[]).map((r) => ({
+          ...r,
+          pdfUrl: fileMap.get(r.filename),
+        }))
+        setGradeResults(withUrls)
       }
     } catch (err) {
       setGradeError(err instanceof Error ? err.message : "Unknown error")
