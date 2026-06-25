@@ -8,11 +8,12 @@ export default async function WorkspacePage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect("/login")
 
-  const { data: rawClasses } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: rawClasses } = await (supabase as any)
     .from("classes")
-    .select("id, name, school_syllabi ( subject_code, subject_title, topics )")
+    .select("id, name, join_code, school_syllabi ( subject_code, subject_title, topics )")
     .eq("teacher_id", user.id)
-    .order("name")
+    .order("name") as { data: { id: string; name: string; join_code: string | null; school_syllabi: { subject_code: string; subject_title: string; topics: string[] } | { subject_code: string; subject_title: string; topics: string[] }[] | null }[] | null }
 
   const classes: ClassItem[] = (rawClasses ?? []).map((c) => {
     const syl = Array.isArray(c.school_syllabi)
@@ -21,6 +22,7 @@ export default async function WorkspacePage() {
     return {
       id: c.id,
       name: c.name,
+      joinCode: c.join_code ?? null,
       syllabus: syl
         ? {
             subject_code: syl.subject_code,

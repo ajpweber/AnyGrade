@@ -1,11 +1,11 @@
-"use client"
+﻿"use client"
 
 import { signOut } from "@/app/login/actions"
 import type { ClassItem, Mode, Syllabus } from "./types"
 
 function QuizIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
       <path d="M4 13.5V16h2.5l7.4-7.4-2.5-2.5L4 13.5z" />
       <path d="M14.2 5.3l1-1a.7.7 0 0 1 1 0l1 1a.7.7 0 0 1 0 1l-1 1-2-2z" />
     </svg>
@@ -14,7 +14,7 @@ function QuizIcon() {
 
 function GradeIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
       <rect x="3" y="2" width="14" height="16" rx="2" />
       <path d="M7 10l2 2 4-4" />
     </svg>
@@ -23,15 +23,15 @@ function GradeIcon() {
 
 function SubjectIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
       <path d="M3 17h2v-6H3v6zm4 0h2V8H7v9zm4 0h2V5h-2v12z" />
     </svg>
   )
 }
 
 const MODES: { id: Mode; label: string; icon: React.ReactNode }[] = [
-  { id: "quiz",    label: "AnyQuiz",    icon: <QuizIcon /> },
-  { id: "grade",   label: "AnyGrade",   icon: <GradeIcon /> },
+  { id: "quiz",    label: "AnyTest",    icon: <QuizIcon /> },
+  { id: "grade",   label: "AnyCheck",   icon: <GradeIcon /> },
   { id: "subject", label: "AnySubject", icon: <SubjectIcon /> },
 ]
 
@@ -56,70 +56,50 @@ export function WorkspaceSidebar({
   nudgeActive, userEmail, onAddClass,
 }: Props) {
   return (
-    <aside style={{
-      width: 220, flexShrink: 0,
-      borderRight: "1px solid #222",
-      display: "flex", flexDirection: "column",
-      background: "#111", height: "100vh", overflow: "hidden",
-    }}>
+    <aside className="w-56 shrink-0 border-r border-zinc-200 bg-white flex flex-col h-screen overflow-hidden">
       {/* Wordmark */}
-      <div style={{ padding: "16px 18px", borderBottom: "1px solid #222", fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", color: "#fff", flexShrink: 0 }}>
-        AnyGrade
+      <div className="px-5 py-5 border-b border-zinc-100">
+        <span className="text-base font-semibold text-zinc-900">AnyGrade</span>
       </div>
 
       {/* Mode tabs */}
-      <div style={{ flexShrink: 0 }}>
+      <nav className="px-3 py-3 border-b border-zinc-100 space-y-0.5">
         {MODES.map((m) => {
           const active = mode === m.id
           return (
             <button
               key={m.id}
               onClick={() => onModeChange(m.id)}
-              style={{
-                display: "flex", alignItems: "center", gap: 10,
-                width: "100%", padding: "10px 18px",
-                background: active ? "#161616" : "none",
-                border: "none",
-                borderLeft: active ? "2px solid #4DB832" : "2px solid transparent",
-                color: active ? "#fff" : "#888",
-                fontSize: 13, cursor: "pointer", textAlign: "left",
-              }}
+              className={`flex items-center gap-2.5 w-full rounded-md px-3 py-2 text-sm text-left transition-colors ${
+                active
+                  ? "bg-zinc-100 text-zinc-900 font-medium"
+                  : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-700"
+              }`}
             >
               {m.icon}
               {m.label}
             </button>
           )
         })}
-      </div>
+      </nav>
 
       {/* Classes header */}
-      <div style={{ flexShrink: 0, padding: "14px 18px 8px", display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "#666" }}>
-          Classes
-        </span>
+      <div className="px-5 pt-4 pb-1 flex items-center gap-2">
+        <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Classes</span>
         {nudgeActive && (
-          <span style={{
-            width: 6, height: 6, borderRadius: "50%", background: "#4DB832",
-            animation: "ag-pulse 1.4s ease-in-out infinite", flexShrink: 0,
-          }} />
+          <span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
         )}
         <button
           onClick={onAddClass}
           title="Add class"
-          style={{
-            marginLeft: "auto", background: "none", border: "none",
-            color: "#555", fontSize: 18, lineHeight: 1, cursor: "pointer",
-            padding: "0 2px", display: "flex", alignItems: "center",
-          }}
+          className="ml-auto text-zinc-400 hover:text-zinc-600 text-lg leading-none"
         >+</button>
       </div>
 
-      {/* Class list — scrollable */}
-      <div style={{ flex: 1, overflowY: "auto" }}>
+      {/* Class list */}
+      <div className="flex-1 overflow-y-auto px-3 pb-2">
         {classes.length === 0 && (
-          <div style={{ padding: "8px 18px", fontSize: 12, color: "#444", fontStyle: "italic" }}>
-            No classes yet
-          </div>
+          <p className="px-3 py-2 text-xs text-zinc-400 italic">No classes yet</p>
         )}
         {classes.map((cls) => {
           const isOpen = openClass === cls.id
@@ -130,43 +110,39 @@ export function WorkspaceSidebar({
             <div key={cls.id}>
               <button
                 onClick={() => onToggleClass(cls.id)}
-                style={{
-                  display: "flex", alignItems: "center", gap: 8,
-                  width: "100%", padding: "9px 18px",
-                  background: "none", border: "none",
-                  color: isOpen ? "#fff" : "#ccc",
-                  fontSize: 13, cursor: "pointer", textAlign: "left",
-                }}
+                className={`flex items-center gap-2 w-full rounded-md px-3 py-2 text-sm text-left transition-colors ${
+                  isOpen ? "text-zinc-900 font-medium" : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50"
+                }`}
               >
-                <span style={{ fontSize: 10, color: "#555", width: 10 }}>
-                  {isOpen ? "▾" : "▸"}
-                </span>
+                <span className="text-[10px] text-zinc-400 w-2.5">{isOpen ? "▾" : "▸"}</span>
                 {cls.name}
               </button>
 
               {isOpen && (
-                <div style={{ paddingBottom: 4 }}>
+                <div className="ml-5 mb-1">
+                  {cls.joinCode && (
+                    <div className="flex items-center gap-1.5 px-3 py-1">
+                      <span className="text-[10px] text-zinc-400 uppercase tracking-wide">Join</span>
+                      <span className="text-[10px] font-mono text-green-600 tracking-wide">{cls.joinCode}</span>
+                      <button
+                        onClick={() => navigator.clipboard.writeText(`${window.location.origin}/join/${cls.joinCode}`)}
+                        title="Copy join link"
+                        className="text-zinc-400 hover:text-zinc-600 text-xs"
+                      >⧉</button>
+                    </div>
+                  )}
                   {cls.syllabus ? (
                     <button
                       onClick={() => onSelectSubject(cls)}
-                      style={{
-                        display: "flex", alignItems: "baseline", gap: 8,
-                        width: "100%", padding: "6px 18px 6px 30px",
-                        background: sylIsActive ? "rgba(77,184,50,.12)" : "none",
-                        border: "none", cursor: "pointer", textAlign: "left",
-                      }}
+                      className={`flex items-baseline gap-2 w-full rounded-md px-3 py-1.5 text-left transition-colors ${
+                        sylIsActive ? "bg-green-50 text-green-700" : "hover:bg-zinc-50"
+                      }`}
                     >
-                      <span style={{ color: "#4DB832", fontWeight: 600, fontSize: 11 }}>
-                        {cls.syllabus.subject_code}
-                      </span>
-                      <span style={{ color: "#aaa", fontSize: 12 }}>
-                        {cls.syllabus.subject_title}
-                      </span>
+                      <span className="text-xs font-semibold text-green-600">{cls.syllabus.subject_code}</span>
+                      <span className="text-xs text-zinc-500 truncate">{cls.syllabus.subject_title}</span>
                     </button>
                   ) : (
-                    <div style={{ padding: "6px 18px 6px 30px", fontSize: 12, color: "#555", fontStyle: "italic" }}>
-                      No syllabus linked
-                    </div>
+                    <p className="px-3 py-1 text-xs text-zinc-400 italic">No syllabus linked</p>
                   )}
                 </div>
               )}
@@ -175,13 +151,14 @@ export function WorkspaceSidebar({
         })}
       </div>
 
-      {/* Footer — sign out */}
-      <div style={{ flexShrink: 0, padding: "12px 18px", borderTop: "1px solid #1c1c1c" }}>
-        <div style={{ fontSize: 11, color: "#444", marginBottom: 6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {userEmail}
-        </div>
+      {/* Footer */}
+      <div className="px-3 py-4 border-t border-zinc-100">
+        <p className="px-3 text-xs text-zinc-400 truncate mb-2">{userEmail}</p>
         <form action={signOut}>
-          <button type="submit" style={{ background: "none", border: "none", color: "#555", fontSize: 12, cursor: "pointer", padding: 0 }}>
+          <button
+            type="submit"
+            className="w-full rounded-md px-3 py-2 text-left text-sm text-zinc-500 hover:bg-zinc-100 transition-colors"
+          >
             Sign out
           </button>
         </form>
@@ -189,3 +166,4 @@ export function WorkspaceSidebar({
     </aside>
   )
 }
+

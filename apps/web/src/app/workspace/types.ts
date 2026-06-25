@@ -13,6 +13,7 @@ export type Syllabus = {
 export type ClassItem = {
   id: string
   name: string
+  joinCode: string | null
   syllabus: Syllabus | null
 }
 

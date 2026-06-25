@@ -710,27 +710,6 @@ export function AnyGradePanel({ activeClassId }: Props) {
             />
           </div>
 
-          {/* Context: manual text entry (quiz / no source selected) */}
-          {(akSource === null || akSource === "quiz") && (
-            <div>
-              <div style={{ fontSize: 11, color: "#555", marginBottom: 8 }}>
-                Or type answers below — one per line: <span style={{ color: "#666", fontFamily: "monospace" }}>problem label | expected answer</span>
-              </div>
-              <textarea
-                value={akText}
-                onChange={(e) => setAkText(e.target.value)}
-                placeholder={"1.301 | ρ = 5333.33 ft\n1.302 | a = 6.83 ft/s²\nQ1 | v = 12 m/s upward"}
-                rows={5}
-                style={{ width: "100%", background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 8, color: "#fff", fontSize: 12, padding: "10px 12px", outline: "none", resize: "vertical", fontFamily: "monospace", boxSizing: "border-box", lineHeight: 1.6 }}
-              />
-              {problems.length > 0 && (
-                <div style={{ fontSize: 11, color: "#4DB832", marginTop: 6 }}>
-                  {problems.length} problem{problems.length !== 1 ? "s" : ""} ready
-                </div>
-              )}
-            </div>
-          )}
-
           {akSource === "file" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <input ref={akFileRef} type="file" accept=".jpg,.jpeg,.png,.heic,.pdf,.txt,.doc,.docx" style={{ display: "none" }} onChange={handleAKFile} />

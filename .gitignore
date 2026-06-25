@@ -32,3 +32,15 @@ Thumbs.db
 supabase/.branches/
 supabase/.temp/
 .gstack/
+
+# Claude Code session files
+.claude/
+
+# Local test/reference files
+OCRtest/
+*.docx
+*.doc
+anygrade-workspace.html
+anysubject-insights-review.html
+make_mcq.js
+ZipGrade50QuestionV2.png
