@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { signOut } from "@/app/login/actions"
 import type { ClassItem, Mode, Syllabus } from "./types"
@@ -30,7 +30,7 @@ function SubjectIcon() {
 }
 
 const MODES: { id: Mode; label: string; icon: React.ReactNode }[] = [
-  { id: "quiz",    label: "AnyQuiz",    icon: <QuizIcon /> },
+  { id: "quiz",    label: "AnyTest",    icon: <QuizIcon /> },
   { id: "grade",   label: "AnyGrade",   icon: <GradeIcon /> },
   { id: "subject", label: "AnySubject", icon: <SubjectIcon /> },
 ]
@@ -166,3 +166,4 @@ export function WorkspaceSidebar({
     </aside>
   )
 }
+

@@ -694,7 +694,7 @@ export function AnyGradePanel({ activeClassId }: Props) {
   const canGrade = files.length > 0 && answerKeyReady && !grading && !gradeResults
 
   const akStatusLabel = !akSource ? "not set"
-    : akSource === "quiz" ? "from AnyQuiz"
+    : akSource === "quiz" ? "from AnyTest"
     : akSource === "scan" ? "scanned"
     : akSource === "photo" ? "photo taken"
     : akSource === "file" ? (akFileName ? "file uploaded" : "not set")
@@ -965,8 +965,8 @@ export function AnyGradePanel({ activeClassId }: Props) {
               selected={akSource === "quiz"}
               onClick={() => { setAkSource("quiz") }}
               icon={<IconQuizLink />}
-              title="From AnyQuiz"
-              desc="Use a key generated in AnyQuiz. Auto-linked to this assessment."
+              title="From AnyTest"
+              desc="Use a key generated in AnyTest. Auto-linked to this assessment."
             />
             <SrcCard
               selected={akSource === "file"}
@@ -1182,5 +1182,6 @@ export function AnyGradePanel({ activeClassId }: Props) {
     </div>
   )
 }
+
 
 

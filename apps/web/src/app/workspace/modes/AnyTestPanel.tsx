@@ -52,7 +52,7 @@ function Stepper({ value, onDecrement, onIncrement, min = 1 }: {
   )
 }
 
-export function AnyQuizPanel({ activeClass, activeSyllabus, quizState, onQuizChange }: Props) {
+export function AnyTestPanel({ activeClass, activeSyllabus, quizState, onQuizChange }: Props) {
   const update = useCallback((patch: Partial<QuizState>) => {
     onQuizChange({ ...quizState, ...patch })
   }, [quizState, onQuizChange])
@@ -221,5 +221,6 @@ export function AnyQuizPanel({ activeClass, activeSyllabus, quizState, onQuizCha
     </div>
   )
 }
+
 
 

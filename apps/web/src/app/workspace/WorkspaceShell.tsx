@@ -1,11 +1,11 @@
-"use client"
+﻿"use client"
 
 import { useState, useCallback, useRef } from "react"
 import type { ClassItem, Mode, Syllabus, QuizState } from "./types"
 import { INITIAL_QUIZ_STATE } from "./types"
 import { createClient } from "@/lib/supabase/client"
 import { WorkspaceSidebar } from "./WorkspaceSidebar"
-import { AnyQuizPanel } from "./modes/AnyQuizPanel"
+import { AnyTestPanel } from "./modes/AnyTestPanel"
 import { AnyGradePanel } from "./modes/AnyGradePanel"
 import { AnySubjectPanel } from "./modes/AnySubjectPanel"
 
@@ -194,7 +194,7 @@ export function WorkspaceShell({ classes, userEmail }: Props) {
 
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {mode === "quiz" && (
-          <AnyQuizPanel
+          <AnyTestPanel
             activeClass={activeClass}
             activeSyllabus={activeSyllabus}
             quizState={quizState}
@@ -221,3 +221,4 @@ export function WorkspaceShell({ classes, userEmail }: Props) {
     </div>
   )
 }
+
