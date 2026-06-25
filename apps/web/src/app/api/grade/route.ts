@@ -44,6 +44,7 @@ function parseJSON(raw: string): Omit<GradeResult, "pts">[] { // bbox is optiona
 }
 
 async function gradeFile(
+  client: Anthropic,
   pdfBase64: string,
   mediaType: "application/pdf" | "image/jpeg" | "image/png",
   problems: { label: string; expected: string; pts: number }[],
@@ -116,7 +117,7 @@ export async function POST(req: NextRequest) {
       : "image/jpeg"
 
     try {
-      const results = await gradeFile(b64, mt as "application/pdf" | "image/jpeg" | "image/png", problems)
+      const results = await gradeFile(client, b64, mt as "application/pdf" | "image/jpeg" | "image/png", problems)
       const rawScore = results.reduce((sum, r) => sum + (r.correct === true ? r.pts : 0), 0)
       fileResults.push({ filename: file.name, results, rawScore, maxScore })
     } catch (err) {
