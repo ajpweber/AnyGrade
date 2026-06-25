@@ -490,24 +490,32 @@ export function AnyGradePanel({ activeClassId }: Props) {
         const splitForm = new FormData()
         splitForm.append("file", files[0].file)
         const splitRes = await fetch(splitEndpoint, { method: "POST", body: splitForm })
-        const splitJson = await splitRes.json()
+        const splitText = await splitRes.text()
+        if (!splitText) throw new Error(`${splitEndpoint} returned empty response (status ${splitRes.status})`)
+        let splitJson: { students: { name: string | null; pdfBase64: string }[]; error?: string }
+        try { splitJson = JSON.parse(splitText) } catch { throw new Error(`${splitEndpoint} bad JSON: ${splitText.slice(0, 200)}`) }
         if (!splitRes.ok) throw new Error(splitJson.error ?? "Batch split failed")
-        const { students } = splitJson as { students: { name: string | null; pdfBase64: string }[] }
+        const { students } = splitJson
         // Grade each student slice
         const allResults: ExtendedGradeFileResult[] = []
-        for (const student of students) {
+        for (let si = 0; si < students.length; si++) {
+          const student = students[si]
           const sliceBlob = await fetch(`data:application/pdf;base64,${student.pdfBase64}`).then((r) => r.blob())
-          const sliceFile = new File([sliceBlob], `${student.name ?? "student"}.pdf`, { type: "application/pdf" })
+          const sliceFile = new File([sliceBlob], `${student.name ?? `page-${si + 1}`}.pdf`, { type: "application/pdf" })
           const gradeForm = new FormData()
           gradeForm.append("problems", JSON.stringify(problems))
           gradeForm.append("files", sliceFile)
           const gradeRes = await fetch(endpoint, { method: "POST", body: gradeForm })
-          const gradeJson = await gradeRes.json()
-          if (gradeRes.ok && gradeJson.fileResults) {
-            allResults.push(...gradeJson.fileResults.map((r: ExtendedGradeFileResult) => ({
-              ...r, filename: student.name ?? r.filename,
-            })))
-          }
+          const gradeText = await gradeRes.text()
+          if (!gradeText) { allResults.push({ filename: sliceFile.name, results: [], rawScore: 0, maxScore: problems.length, error: `page ${si + 1}: empty response` }); continue }
+          try {
+            const gradeJson = JSON.parse(gradeText)
+            if (gradeRes.ok && gradeJson.fileResults) {
+              allResults.push(...gradeJson.fileResults.map((r: ExtendedGradeFileResult) => ({
+                ...r, filename: student.name ?? r.filename,
+              })))
+            }
+          } catch { allResults.push({ filename: sliceFile.name, results: [], rawScore: 0, maxScore: problems.length, error: `page ${si + 1} bad JSON: ${gradeText.slice(0, 100)}` }) }
         }
         setGradeResults(allResults)
       } else {
