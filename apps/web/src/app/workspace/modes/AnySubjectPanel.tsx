@@ -91,7 +91,7 @@ function TierBlock({
             onBlur={() => setEditing(false)}
             autoFocus
             rows={3}
-            style={{ width: "100%", background: "#f9fafb", border: "1px solid #e4e4e7", borderRadius: 6, color: "#ccc", fontSize: 12, padding: "8px 10px", resize: "vertical", outline: "none", boxSizing: "border-box" }}
+            style={{ width: "100%", background: "#f9fafb", border: "1px solid #e4e4e7", borderRadius: 6, color: "#3f3f46", fontSize: 12, padding: "8px 10px", resize: "vertical", outline: "none", boxSizing: "border-box" }}
           />
         ) : (
           <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
@@ -305,4 +305,5 @@ export function AnySubjectPanel({ activeClass }: Props) {
     </div>
   )
 }
+
 

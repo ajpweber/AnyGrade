@@ -93,7 +93,7 @@ function SrcCard({ selected, onClick, icon, title, desc, badge }: SrcCardProps) 
       onClick={onClick}
       style={{
         flex: 1, minWidth: 160, display: "flex", flexDirection: "column", alignItems: "flex-start",
-        gap: 0, padding: "16px 16px 14px", background: selected ? "rgba(77,184,50,.08)" : "#1a1a1a",
+        gap: 0, padding: "16px 16px 14px", background: selected ? "rgba(77,184,50,.08)" : "#f9fafb",
         borderRadius: 10, border: selected ? "1.5px solid #4DB832" : "1.5px solid #2a2a2a",
         cursor: "pointer", textAlign: "left", transition: "border-color .15s, background .15s",
         position: "relative",
@@ -102,8 +102,8 @@ function SrcCard({ selected, onClick, icon, title, desc, badge }: SrcCardProps) 
       {selected && (
         <span style={{ position: "absolute", top: 12, right: 14, fontSize: 11, fontWeight: 700, color: "#4DB832" }}>✓</span>
       )}
-      <span style={{ color: selected ? "#4DB832" : "#555", marginBottom: 10 }}>{icon}</span>
-      <div style={{ fontSize: 13, fontWeight: 600, color: selected ? "#fff" : "#ccc", marginBottom: 4 }}>{title}</div>
+      <span style={{ color: selected ? "#16a34a" : "#a1a1aa", marginBottom: 10 }}>{icon}</span>
+      <div style={{ fontSize: 13, fontWeight: 600, color: selected ? "#16a34a" : "#3f3f46", marginBottom: 4 }}>{title}</div>
       <div style={{ fontSize: 11, color: "#71717a", lineHeight: 1.55 }}>{desc}</div>
       {badge && <div style={{ marginTop: 10 }}>{badge}</div>}
     </button>
@@ -171,11 +171,11 @@ function StudentRow({ file, objectUrl, identity }: { file: GradeFileResult; obje
     <div style={{ borderBottom: "1px solid #1c1c1c" }}>
       <div
         onClick={() => setExpanded((v) => !v)}
-        style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", cursor: "pointer", background: expanded ? "#1a1a1a" : "transparent" }}
+        style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", cursor: "pointer", background: expanded ? "#f4f4f5" : "transparent" }}
       >
         <span style={{ fontSize: 10, color: "#a1a1aa", flexShrink: 0 }}>{expanded ? "▴" : "▾"}</span>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, color: "#ccc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayName}</div>
+          <div style={{ fontSize: 13, color: "#3f3f46", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayName}</div>
         </div>
         {file.maxScore > 0 && (
           <span style={{ fontSize: 11, color: status === "unidentified" ? "#ef4444" : "#555", flexShrink: 0 }}>
@@ -186,7 +186,7 @@ function StudentRow({ file, objectUrl, identity }: { file: GradeFileResult; obje
       </div>
 
       {expanded && (
-        <div style={{ padding: "0 16px 16px", background: "#141414" }}>
+        <div style={{ padding: "0 16px 16px", background: "#f4f4f5" }}>
           {status === "error" ? (
             <div style={{ padding: "10px 14px", background: "rgba(239,68,68,.08)", border: "1px solid rgba(239,68,68,.2)", borderRadius: 8, fontSize: 12, color: "#ef4444" }}>
               {file.error}
@@ -312,7 +312,7 @@ function ResultsTable({ results, meta, objectUrls, identities }: {
       padding: "4px 12px", borderRadius: 99, fontSize: 11, fontWeight: 500 as const, border: "1px solid",
       borderColor: on ? color : "#2a2a2a",
       background: on ? `${color}18` : "none",
-      color: on ? color : "#666",
+      color: on ? color : "#71717a",
       cursor: "pointer" as const,
     }
   }
@@ -464,7 +464,7 @@ function SendPanel({ gradeResults, files, identities, activeClassId, assessmentT
       <button
         disabled={sending}
         onClick={handleSend}
-        style={{ padding: "9px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, border: "none", background: sending ? "#2a2a2a" : "#4DB832", color: sending ? "#555" : "#fff", cursor: sending ? "default" : "pointer" }}
+        style={{ padding: "9px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, border: "none", background: sending ? "#e4e4e7" : "#16a34a", color: sending ? "#71717a" : "#fff", cursor: sending ? "default" : "pointer" }}
       >
         {sending ? "Sending…" : readyCount > 0 ? `Send corrected paper${readyCount > 1 ? "s" : ""}` : "Send corrected paper"}
       </button>
@@ -857,7 +857,7 @@ export function AnyGradePanel({ activeClassId }: Props) {
                     <path d="M12 15V4M12 4L8 8M12 4l4 4" strokeLinecap="round" strokeLinejoin="round"/>
                     <path d="M4 17v1a2 2 0 002 2h12a2 2 0 002-2v-1" strokeLinecap="round"/>
                   </svg>
-                  <div style={{ fontSize: 13, color: "#ccc" }}>
+                  <div style={{ fontSize: 13, color: "#3f3f46" }}>
                     Drop student answer sheets here, or{" "}
                     <button onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click() }} style={{ background: "none", border: "none", color: "#4DB832", cursor: "pointer", fontSize: 13, padding: 0, textDecoration: "underline" }}>
                       browse
@@ -873,7 +873,7 @@ export function AnyGradePanel({ activeClassId }: Props) {
                     return (
                       <div key={f.id}>
                         <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 14px", borderRadius: 8, background: "#ffffff" }}>
-                          <span style={{ flex: 1, fontSize: 13, color: "#ccc", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{f.name}</span>
+                          <span style={{ flex: 1, fontSize: 13, color: "#3f3f46", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{f.name}</span>
                           <span style={{ fontSize: 11, color: "#a1a1aa", flexShrink: 0 }}>{formatBytes(f.size)}</span>
                           {isBatchPdf && splitPreviews.length === 0 && (
                             <button
@@ -892,7 +892,7 @@ export function AnyGradePanel({ activeClassId }: Props) {
 
                         {/* Split preview — shown below the batch file while pending confirmation */}
                         {isBatchPdf && splitPreviews.length > 0 && (
-                          <div style={{ marginTop: 4, padding: "12px 14px", background: "#141414", borderRadius: 8, border: "1px solid #e4e4e7" }}>
+                          <div style={{ marginTop: 4, padding: "12px 14px", background: "#f4f4f5", borderRadius: 8, border: "1px solid #e4e4e7" }}>
                             <div style={{ fontSize: 11, color: "#71717a", marginBottom: 10, fontWeight: 600 }}>
                               {splitPreviews.length} students detected — confirm to split
                             </div>
@@ -900,7 +900,7 @@ export function AnyGradePanel({ activeClassId }: Props) {
                               {splitPreviews.map((s, i) => (
                                 <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12 }}>
                                   <span style={{ color: "#71717a", minWidth: 20, textAlign: "right" }}>{i + 1}.</span>
-                                  <span style={{ color: "#ccc", flex: 1 }}>{s.name ?? <span style={{ color: "#a1a1aa" }}>Unidentified</span>}</span>
+                                  <span style={{ color: "#3f3f46", flex: 1 }}>{s.name ?? <span style={{ color: "#a1a1aa" }}>Unidentified</span>}</span>
                                   {s.section && <span style={{ color: "#a1a1aa" }}>{s.section}</span>}
                                   <span style={{ color: "#a1a1aa" }}>pp {s.startPage}–{s.endPage}</span>
                                 </div>
@@ -937,7 +937,7 @@ export function AnyGradePanel({ activeClassId }: Props) {
             <div style={{ padding: "14px 16px", background: "#ffffff", borderRadius: 8, display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#4DB832", flexShrink: 0, animation: "ag-pulse 1.4s ease-in-out infinite" }} />
               <div>
-                <div style={{ fontSize: 13, color: "#ccc", fontWeight: 500 }}>EPSON ES-400</div>
+                <div style={{ fontSize: 13, color: "#3f3f46", fontWeight: 500 }}>EPSON ES-400</div>
                 <div style={{ fontSize: 11, color: "#a1a1aa", marginTop: 2 }}>USB · Ready · ADF 50-sheet capacity</div>
               </div>
             </div>
@@ -947,7 +947,7 @@ export function AnyGradePanel({ activeClassId }: Props) {
             <div style={{ padding: "14px 16px", background: "#ffffff", borderRadius: 8, display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{ width: 34, height: 34, borderRadius: 8, background: "#e4e4e7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>📱</div>
               <div>
-                <div style={{ fontSize: 13, color: "#ccc", fontWeight: 500 }}>Juan&apos;s iPhone 15</div>
+                <div style={{ fontSize: 13, color: "#3f3f46", fontWeight: 500 }}>Juan&apos;s iPhone 15</div>
                 <div style={{ fontSize: 11, color: "#a1a1aa", marginTop: 2 }}>WiFi Direct · Session: <span style={{ fontFamily: "monospace" }}>{sessionCode}</span></div>
               </div>
               <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#4DB832", flexShrink: 0, marginLeft: "auto" }} />
@@ -1023,7 +1023,7 @@ export function AnyGradePanel({ activeClassId }: Props) {
                   <span style={{ fontSize: 13, color: "#4DB832" }}>{akFileName}</span>
                 ) : (
                   <>
-                    <div style={{ fontSize: 13, color: "#ccc" }}>
+                    <div style={{ fontSize: 13, color: "#3f3f46" }}>
                       Drop answer key here, or{" "}
                       <button onClick={(e) => { e.stopPropagation(); akFileRef.current?.click() }} style={{ background: "none", border: "none", color: "#4DB832", cursor: "pointer", fontSize: 13, padding: 0, textDecoration: "underline" }}>browse</button>
                     </div>
@@ -1042,7 +1042,7 @@ export function AnyGradePanel({ activeClassId }: Props) {
                 animation: scanner.status !== "ready" ? "ag-pulse 1.4s ease-in-out infinite" : "none",
               }} />
               <div>
-                <div style={{ fontSize: 13, color: "#ccc", fontWeight: 500 }}>{scanner.name ?? "Waiting for scanner…"}</div>
+                <div style={{ fontSize: 13, color: "#3f3f46", fontWeight: 500 }}>{scanner.name ?? "Waiting for scanner…"}</div>
                 {scanner.name ? (
                   <div style={{ fontSize: 11, color: "#a1a1aa", marginTop: 2 }}>{[scanner.connectionType, scanner.statusLabel, scanner.capability].filter(Boolean).join(" · ")}</div>
                 ) : (
@@ -1055,7 +1055,7 @@ export function AnyGradePanel({ activeClassId }: Props) {
           {akSource === "photo" && (
             <div style={{ padding: "14px 16px", background: "#ffffff", borderRadius: 8, display: "flex", flexDirection: "column", gap: 10 }}>
               {["Open AnyGrade on your phone", "Tap Scan answer key and point at the key sheet"].map((step, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: "#ccc" }}>
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: "#3f3f46" }}>
                   <span style={{ width: 20, height: 20, borderRadius: "50%", background: "#e4e4e7", color: "#71717a", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     {i + 1}
                   </span>
@@ -1143,7 +1143,7 @@ export function AnyGradePanel({ activeClassId }: Props) {
               {sendResults.map((r) => (
                 <div key={r.email} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12 }}>
                   <span style={{ color: r.error ? "#ef4444" : "#4DB832", flexShrink: 0 }}>{r.error ? "✗" : "✓"}</span>
-                  <span style={{ color: "#ccc" }}>{r.email}</span>
+                  <span style={{ color: "#3f3f46" }}>{r.email}</span>
                   {r.error && <span style={{ color: "#ef4444" }}>{r.error}</span>}
                 </div>
               ))}
@@ -1171,8 +1171,8 @@ export function AnyGradePanel({ activeClassId }: Props) {
           onClick={handleGrade}
           style={{
             marginLeft: "auto", padding: "10px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, border: "none",
-            background: canGrade ? "#4DB832" : "#2a2a2a",
-            color: canGrade ? "#fff" : "#555",
+            background: canGrade ? "#16a34a" : "#e4e4e7",
+            color: canGrade ? "#fff" : "#71717a",
             cursor: canGrade ? "pointer" : "default",
           }}
         >
@@ -1182,4 +1182,5 @@ export function AnyGradePanel({ activeClassId }: Props) {
     </div>
   )
 }
+
 
