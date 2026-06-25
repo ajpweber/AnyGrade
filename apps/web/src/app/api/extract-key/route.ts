@@ -110,3 +110,4 @@ export async function POST(req: NextRequest) {
   const result = parseJSON(raw)
   return NextResponse.json(result)
 }
+export const maxDuration = 300

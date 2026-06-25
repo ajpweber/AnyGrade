@@ -108,3 +108,4 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ students, totalPages })
 }
+export const maxDuration = 300

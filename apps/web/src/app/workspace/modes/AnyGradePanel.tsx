@@ -475,19 +475,47 @@ export function AnyGradePanel({ activeClassId }: Props) {
     setGrading(true)
     setGradeError(null)
     setGradeResults(null)
-    const form = new FormData()
-    form.append("problems", JSON.stringify(problems))
-    files.forEach((f) => form.append("files", f.file))
     const endpoint = zipgradeMode && hasHandwritten
       ? "/api/grade-cross"
       : zipgradeMode
       ? "/api/grade-omr"
       : "/api/grade"
     try {
-      const res = await fetch(endpoint, { method: "POST", body: form })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error ?? "Grade request failed")
-      setGradeResults(json.fileResults)
+      // For batch PDFs: split into per-student slices first, then grade each slice
+      const isBatchPdf = files.length === 1 && files[0].file.name.endsWith(".pdf") && files[0].file.size > 2_000_000
+      if (isBatchPdf) {
+        const splitForm = new FormData()
+        splitForm.append("file", files[0].file)
+        const splitRes = await fetch("/api/split-batch", { method: "POST", body: splitForm })
+        const splitJson = await splitRes.json()
+        if (!splitRes.ok) throw new Error(splitJson.error ?? "Batch split failed")
+        const { students } = splitJson as { students: { name: string | null; pdfBase64: string }[] }
+        // Grade each student slice
+        const allResults: ExtendedGradeFileResult[] = []
+        for (const student of students) {
+          const sliceBlob = await fetch(`data:application/pdf;base64,${student.pdfBase64}`).then((r) => r.blob())
+          const sliceFile = new File([sliceBlob], `${student.name ?? "student"}.pdf`, { type: "application/pdf" })
+          const gradeForm = new FormData()
+          gradeForm.append("problems", JSON.stringify(problems))
+          gradeForm.append("files", sliceFile)
+          const gradeRes = await fetch(endpoint, { method: "POST", body: gradeForm })
+          const gradeJson = await gradeRes.json()
+          if (gradeRes.ok && gradeJson.fileResults) {
+            allResults.push(...gradeJson.fileResults.map((r: ExtendedGradeFileResult) => ({
+              ...r, filename: student.name ?? r.filename,
+            })))
+          }
+        }
+        setGradeResults(allResults)
+      } else {
+        const form = new FormData()
+        form.append("problems", JSON.stringify(problems))
+        files.forEach((f) => form.append("files", f.file))
+        const res = await fetch(endpoint, { method: "POST", body: form })
+        const json = await res.json()
+        if (!res.ok) throw new Error(json.error ?? "Grade request failed")
+        setGradeResults(json.fileResults)
+      }
     } catch (err) {
       setGradeError(err instanceof Error ? err.message : "Unknown error")
     } finally {
