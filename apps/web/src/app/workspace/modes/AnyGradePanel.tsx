@@ -219,60 +219,197 @@ function parseAnswerKeyText(text: string): { label: string; expected: string }[]
 }
 
 // ── Results table ──────────────────────────────────────────────────────────
-type ExtendedGradeFileResult = GradeFileResult & { needsManual?: string[] }
+type ExtendedGradeFileResult = GradeFileResult & { needsManual?: string[]; studentName?: string | null }
 
-function ResultsTable({ results }: { results: ExtendedGradeFileResult[] }) {
+type StudentStatus = "graded" | "needs-review" | "error" | "unidentified"
+
+function studentStatus(file: ExtendedGradeFileResult): StudentStatus {
+  if (file.error) return "error"
+  if (!file.studentName) return "unidentified"
+  if (file.results.some((r) => r.correct === null)) return "needs-review"
+  return "graded"
+}
+
+function StatusBadge({ status }: { status: StudentStatus }) {
+  const styles: Record<StudentStatus, { bg: string; color: string; label: string }> = {
+    "graded":       { bg: "rgba(77,184,50,.12)",   color: "#4DB832", label: "Graded" },
+    "needs-review": { bg: "rgba(217,119,6,.12)",   color: "#D97706", label: "Needs review" },
+    "error":        { bg: "rgba(239,68,68,.12)",   color: "#ef4444", label: "Error" },
+    "unidentified": { bg: "rgba(100,100,100,.15)", color: "#666",    label: "Unidentified" },
+  }
+  const s = styles[status]
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      {results.map((file) => (
-        <div key={file.filename}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: "#ccc", marginBottom: 8 }}>{file.filename}</div>
+    <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: ".04em", borderRadius: 4, padding: "2px 8px", background: s.bg, color: s.color }}>
+      {s.label}
+    </span>
+  )
+}
+
+function StudentRow({ file, assessmentTitle, assessmentType, activeClassId }: {
+  file: ExtendedGradeFileResult
+  assessmentTitle: string
+  assessmentType: string
+  activeClassId: string | null
+}) {
+  const [open, setOpen] = useState(false)
+  const [email, setEmail] = useState("")
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
+
+  const status   = studentStatus(file)
+  const rawScore = file.rawScore ?? 0
+  const maxScore = file.maxScore ?? 0
+  const name     = file.studentName ?? file.filename
+
+  const wrongOrNull = file.results.filter((r) => r.correct === false || r.correct === null)
+
+  async function handleSend() {
+    if (!email || sending) return
+    setSending(true)
+    try {
+      const objectUrl = URL.createObjectURL(new Blob([], { type: "application/pdf" }))
+      await fetch("/api/send-corrections", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          assessmentTitle: assessmentTitle || "Assessment",
+          assessmentType,
+          students: [{ name: file.studentName, email, gradeResult: file, pdfBase64: "" }],
+        }),
+      })
+      URL.revokeObjectURL(objectUrl)
+      setSent(true)
+    } catch { /* swallow */ }
+    setSending(false)
+  }
+
+  return (
+    <div style={{ border: `1px solid ${status === "needs-review" ? "#3a2a10" : status === "error" ? "#3a1010" : "#222"}`, borderRadius: 10, overflow: "hidden", marginBottom: 8 }}>
+      {/* Header row */}
+      <div
+        onClick={() => setOpen((o) => !o)}
+        style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", cursor: "pointer", background: "#161616" }}
+      >
+        <span style={{ fontSize: 13, color: "#555", width: 14 }}>{open ? "▾" : "▸"}</span>
+        <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: status === "unidentified" ? "#555" : "#ddd", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {name}
+        </div>
+        {status !== "error" && status !== "unidentified" && (
+          <span style={{
+            fontSize: 13, fontWeight: 700, borderRadius: 6, padding: "3px 10px",
+            background: status === "graded" ? "rgba(77,184,50,.1)" : "rgba(217,119,6,.1)",
+            color: status === "graded" ? "#4DB832" : "#D97706",
+          }}>
+            {rawScore} / {maxScore}
+          </span>
+        )}
+        <StatusBadge status={status} />
+      </div>
+
+      {/* Expanded */}
+      {open && (
+        <div style={{ borderTop: "1px solid #222", padding: "16px" }}>
+          {status === "error" && (
+            <div style={{ fontSize: 12, color: "#ef4444", padding: "8px 12px", background: "rgba(239,68,68,.08)", borderRadius: 6, marginBottom: 12 }}>
+              {file.error}
+            </div>
+          )}
+          {status === "unidentified" && (
+            <div style={{ fontSize: 12, color: "#888", padding: "8px 12px", background: "rgba(100,100,100,.08)", borderRadius: 6, marginBottom: 12 }}>
+              Could not read student name from this sheet. Grade held at 0 until identity is confirmed.
+            </div>
+          )}
           {file.needsManual && file.needsManual.length > 0 && (
-            <div style={{ padding: "8px 12px", background: "rgba(217,119,6,.08)", border: "1px solid rgba(217,119,6,.2)", borderRadius: 6, fontSize: 11, color: "#D97706", marginBottom: 6 }}>
+            <div style={{ padding: "7px 12px", background: "rgba(217,119,6,.08)", border: "1px solid rgba(217,119,6,.2)", borderRadius: 6, fontSize: 11, color: "#D97706", marginBottom: 10 }}>
               Manual entry needed for Q{file.needsManual.join(", Q")}
             </div>
           )}
-          {file.error ? (
-            <div style={{ fontSize: 12, color: "#ef4444", padding: "8px 12px", background: "rgba(239,68,68,.08)", borderRadius: 6 }}>
-              Error: {file.error}
-            </div>
-          ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+
+          {/* Answer table */}
+          {file.results.length > 0 && (
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, marginBottom: 14 }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid #2a2a2a" }}>
-                  <th style={{ textAlign: "left", padding: "6px 10px", color: "#666", fontWeight: 600 }}>Problem</th>
-                  <th style={{ textAlign: "left", padding: "6px 10px", color: "#666", fontWeight: 600 }}>Read</th>
-                  <th style={{ textAlign: "center", padding: "6px 10px", color: "#666", fontWeight: 600 }}>Result</th>
-                  <th style={{ textAlign: "center", padding: "6px 10px", color: "#666", fontWeight: 600 }}>Confidence</th>
+                  <th style={{ textAlign: "left", padding: "5px 8px", color: "#555", fontWeight: 600 }}>Problem</th>
+                  <th style={{ textAlign: "left", padding: "5px 8px", color: "#555", fontWeight: 600 }}>Read</th>
+                  <th style={{ textAlign: "center", padding: "5px 8px", color: "#555", fontWeight: 600 }}>Result</th>
+                  <th style={{ textAlign: "center", padding: "5px 8px", color: "#555", fontWeight: 600 }}>Confidence</th>
                 </tr>
               </thead>
               <tbody>
                 {file.results.map((r) => (
-                  <tr key={r.label} style={{ borderBottom: "1px solid #1c1c1c" }}>
-                    <td style={{ padding: "8px 10px", color: "#4DB832", fontWeight: 600 }}>{r.label}</td>
-                    <td style={{ padding: "8px 10px", color: "#ccc" }}>{r.read}</td>
-                    <td style={{ padding: "8px 10px", textAlign: "center" }}>
-                      {r.correct === true
-                        ? <span style={{ color: "#4DB832", fontWeight: 700 }}>✓</span>
-                        : r.correct === false
-                        ? <span style={{ color: "#ef4444", fontWeight: 700 }}>✗</span>
+                  <tr key={r.label} style={{ borderBottom: "1px solid #1a1a1a", background: r.correct === null ? "rgba(217,119,6,.04)" : "none" }}>
+                    <td style={{ padding: "6px 8px", color: "#4DB832", fontWeight: 600 }}>{r.label}</td>
+                    <td style={{ padding: "6px 8px", color: r.correct === null ? "#D97706" : "#bbb" }}>{r.read ?? "—"}</td>
+                    <td style={{ padding: "6px 8px", textAlign: "center" }}>
+                      {r.correct === true ? <span style={{ color: "#4DB832", fontWeight: 700 }}>✓</span>
+                        : r.correct === false ? <span style={{ color: "#ef4444", fontWeight: 700 }}>✗</span>
                         : <span style={{ color: "#D97706", fontWeight: 700 }}>?</span>}
                     </td>
-                    <td style={{ padding: "8px 10px", textAlign: "center" }}>
+                    <td style={{ padding: "6px 8px", textAlign: "center" }}>
                       <span style={{
-                        fontSize: 10, fontWeight: 600, borderRadius: 4, padding: "2px 7px",
-                        background: r.confidence === "high" ? "rgba(77,184,50,.15)" : r.confidence === "medium" ? "rgba(217,119,6,.15)" : "rgba(239,68,68,.12)",
+                        fontSize: 10, fontWeight: 600, borderRadius: 3, padding: "1px 6px",
+                        background: r.confidence === "high" ? "rgba(77,184,50,.12)" : r.confidence === "medium" ? "rgba(217,119,6,.12)" : "rgba(239,68,68,.1)",
                         color: r.confidence === "high" ? "#4DB832" : r.confidence === "medium" ? "#D97706" : "#ef4444",
-                      }}>
-                        {r.confidence}
-                      </span>
+                      }}>{r.confidence}</span>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           )}
+
+          {/* Send corrected paper */}
+          {status !== "error" && (
+            <div style={{ borderTop: "1px solid #1c1c1c", paddingTop: 12, display: "flex", gap: 8, alignItems: "center" }}>
+              {sent ? (
+                <span style={{ fontSize: 12, color: "#4DB832" }}>✓ Sent</span>
+              ) : (
+                <>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="student@email.com"
+                    style={{ flex: 1, background: "#111", border: "1px solid #2a2a2a", borderRadius: 6, color: "#fff", fontSize: 12, padding: "6px 10px", outline: "none", fontFamily: "inherit" }}
+                  />
+                  <button
+                    onClick={handleSend}
+                    disabled={!email || sending}
+                    style={{ padding: "7px 14px", borderRadius: 6, border: "none", background: email && !sending ? "#4DB832" : "#2a2a2a", color: email && !sending ? "#fff" : "#555", fontSize: 11, fontWeight: 600, cursor: email && !sending ? "pointer" : "default" }}
+                  >
+                    {sending ? "Sending…" : "Send corrected paper"}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
         </div>
+      )}
+    </div>
+  )
+}
+
+function ResultsTable({ results, assessmentTitle, assessmentType, activeClassId }: {
+  results: ExtendedGradeFileResult[]
+  assessmentTitle: string
+  assessmentType: string
+  activeClassId: string | null
+}) {
+  const anyNeedsReview = results.some((r) => studentStatus(r) === "needs-review")
+  return (
+    <div>
+      {anyNeedsReview && (
+        <div style={{ padding: "8px 14px", background: "rgba(217,119,6,.08)", border: "1px solid rgba(217,119,6,.2)", borderRadius: 8, fontSize: 12, color: "#D97706", marginBottom: 14 }}>
+          Some answers need manual review — marked with ?
+        </div>
+      )}
+      <div style={{ display: "flex", alignItems: "center", padding: "8px 16px", marginBottom: 6 }}>
+        <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".08em", color: "#555", flex: 1 }}>Student</span>
+        <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".08em", color: "#555" }}>Status</span>
+      </div>
+      {results.map((file) => (
+        <StudentRow key={file.filename} file={file} assessmentTitle={assessmentTitle} assessmentType={assessmentType} activeClassId={activeClassId} />
       ))}
     </div>
   )
@@ -904,7 +1041,7 @@ export function AnyGradePanel({ activeClassId }: Props) {
                 {gradeError}
               </div>
             )}
-            {gradeResults && <ResultsTable results={gradeResults} />}
+            {gradeResults && <ResultsTable results={gradeResults} assessmentTitle={assessmentTitle} assessmentType={assessmentType} activeClassId={activeClassId} />}
           </div>
         )}
 
