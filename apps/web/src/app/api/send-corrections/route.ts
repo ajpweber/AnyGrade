@@ -3,7 +3,6 @@ import { Resend } from "resend"
 import { createClient } from "@supabase/supabase-js"
 import type { GradeFileResult } from "@/app/api/grade/types"
 
-const resend  = new Resend(process.env.RESEND_API_KEY)
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -29,6 +28,7 @@ export type SendResult = {
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
 
 export async function POST(req: NextRequest) {
+  const resend = new Resend(process.env.RESEND_API_KEY)
   const body: SendPayload = await req.json()
   const { assessmentTitle, assessmentType, students } = body
 
