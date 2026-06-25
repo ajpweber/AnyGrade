@@ -18,13 +18,36 @@ type DragMode =
   | { type: "pan" }
   | null
 
-const PADDING      = 0.15  // page-fraction padding around bbox for tight crop
-const ZOOM_FACTOR  = 3     // zoom-out shows 3× more context, same scale ratio
+// Tight crop: padding around bbox in actual page pixels (square crop, no distortion)
+const PADDING_PX   = 80
 const DISPLAY_SIZE = 420   // canvas px (square)
 const HANDLE       = 12    // corner handle hit area px
 const BLANK_THRESH = 0.65  // fraction of near-white pixels that triggers zoom button
 
 function clamp(v: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, v)) }
+
+// Square-pixel crop (no distortion on square canvas) centered on lb
+function tightCrop(lb: BBox, pageW: number, pageH: number) {
+  const bboxPxW  = lb.w * pageW
+  const bboxPxH  = lb.h * pageH
+  const halfSize = Math.max(bboxPxW, bboxPxH) / 2 + PADDING_PX
+  const cw = Math.min(1, (halfSize * 2) / pageW)
+  const ch = Math.min(1, (halfSize * 2) / pageH)
+  const cx = clamp((lb.x + lb.w / 2) - cw / 2, 0, 1 - cw)
+  const cy = clamp((lb.y + lb.h / 2) - ch / 2, 0, 1 - ch)
+  return { cx, cy, cw, ch }
+}
+
+// 1/4-page square-pixel crop centered on lb
+// S = sqrt(pageW * pageH) / 2 → cw*pageW = ch*pageH = S, area = S²/(pageW*pageH) ≈ 1/4
+function quarterCrop(lb: BBox, pageW: number, pageH: number) {
+  const S  = Math.sqrt(pageW * pageH) / 2
+  const cw = S / pageW   // ≤ 1 for any realistic page
+  const ch = S / pageH
+  const cx = clamp((lb.x + lb.w / 2) - cw / 2, 0, 1 - cw)
+  const cy = clamp((lb.y + lb.h / 2) - ch / 2, 0, 1 - ch)
+  return { cx, cy, cw, ch }
+}
 
 function hitMode(
   mx: number, my: number,
@@ -78,7 +101,6 @@ function applyDelta(
   return { lb, crop }
 }
 
-// Returns fraction of canvas pixels that are near-white (blank paper)
 function blankFraction(canvas: HTMLCanvasElement): number {
   const ctx = canvas.getContext("2d")!
   const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height)
@@ -97,8 +119,9 @@ export function CropAnnotation({ scanUrl, page, bbox, label, color, onConfirm }:
   const zoomedRef    = useRef(false)
   const dragOrigin   = useRef<{ mx: number; my: number } | null>(null)
   const pageCanvas   = useRef<HTMLCanvasElement | null>(null)
+  const pageWRef     = useRef(0)
+  const pageHRef     = useRef(0)
   const cropRef      = useRef({ cx: 0, cy: 0, cw: 0, ch: 0 })
-  const tightCropRef = useRef({ cx: 0, cy: 0, cw: 0, ch: 0 })
   const liveBox      = useRef<BBox>({ ...bbox })
 
   useEffect(() => {
@@ -121,20 +144,13 @@ export function CropAnnotation({ scanUrl, page, bbox, label, color, onConfirm }:
       if (cancelled) return
 
       pageCanvas.current = pc
-      liveBox.current = { ...bbox }
+      pageWRef.current   = pc.width
+      pageHRef.current   = pc.height
+      liveBox.current    = { ...bbox }
 
-      // Tight crop: bbox + PADDING on each side
-      const cw = Math.min(1, bbox.w + PADDING * 2)
-      const ch = Math.min(1, bbox.h + PADDING * 2)
-      const cx = clamp(bbox.x - PADDING, 0, 1 - cw)
-      const cy = clamp(bbox.y - PADDING, 0, 1 - ch)
-      const tight = { cx, cy, cw, ch }
-      cropRef.current      = tight
-      tightCropRef.current = tight
-
+      cropRef.current = tightCrop(bbox, pc.width, pc.height)
       drawCrop()
 
-      // Show zoom button only if tight crop is mostly blank paper
       if (canvasRef.current && blankFraction(canvasRef.current) > BLANK_THRESH) {
         setShowZoom(true)
       }
@@ -230,21 +246,16 @@ export function CropAnnotation({ scanUrl, page, bbox, label, color, onConfirm }:
     dragOrigin.current = null
   }
 
-  function zoomOut() {
-    const { cw: tcw, ch: tch } = tightCropRef.current
-    const lb = liveBox.current
-    const cw = Math.min(1, tcw * ZOOM_FACTOR)
-    const ch = Math.min(1, tch * ZOOM_FACTOR)
-    const cx = clamp(lb.x + lb.w / 2 - cw / 2, 0, 1 - cw)
-    const cy = clamp(lb.y + lb.h / 2 - ch / 2, 0, 1 - ch)
-    cropRef.current    = { cx, cy, cw, ch }
-    zoomedRef.current  = true
+  function doZoomOut() {
+    cropRef.current   = quarterCrop(liveBox.current, pageWRef.current, pageHRef.current)
+    zoomedRef.current = true
     setZoomed(true)
     requestAnimationFrame(() => drawCrop())
   }
 
-  function zoomIn() {
-    cropRef.current   = { ...tightCropRef.current }
+  function doZoomIn() {
+    // Recompute tight crop around where the bbox is now, not original position
+    cropRef.current   = tightCrop(liveBox.current, pageWRef.current, pageHRef.current)
     zoomedRef.current = false
     setZoomed(false)
     requestAnimationFrame(() => drawCrop())
@@ -275,7 +286,7 @@ export function CropAnnotation({ scanUrl, page, bbox, label, color, onConfirm }:
         <div>
           {showZoom && !zoomed && (
             <button
-              onClick={zoomOut}
+              onClick={doZoomOut}
               style={{ padding: "7px 16px", borderRadius: 6, background: "#2a2a2a", color: "#aaa", border: "1px solid #3a3a3a", fontSize: 12, cursor: "pointer" }}
             >
               🔍 Zoom out
@@ -283,7 +294,7 @@ export function CropAnnotation({ scanUrl, page, bbox, label, color, onConfirm }:
           )}
           {zoomed && (
             <button
-              onClick={zoomIn}
+              onClick={doZoomIn}
               style={{ padding: "7px 16px", borderRadius: 6, background: "#2a2a2a", color: "#aaa", border: "1px solid #3a3a3a", fontSize: 12, cursor: "pointer" }}
             >
               ✕ Zoom in

@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AnySubject Insights — Review Build</title>
+<style>
+  /* ─── Reset ─── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ─── Page ─── */
+  body {
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    color: #1a1a1a;
+    background: #f0efed;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px 64px;
+  }
+
+  h1 {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: #aaa;
+    margin-bottom: 20px;
+  }
+
+  /* ─── Workspace shell ─── */
+  .wrap {
+    width: 100%;
+    max-width: 720px;
+    border: 1px solid #d8d6d2;
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    height: 680px;
+    background: #fff;
+    position: relative;
+    box-shadow: 0 4px 24px rgba(0,0,0,.07);
+  }
+
+  /* ─── Topbar ─── */
+  .topbar {
+    height: 50px;
+    border-bottom: 1px solid #e8e6e2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    flex-shrink: 0;
+    background: #fff;
+  }
+  .tbL { display: flex; align-items: center; gap: 10px; }
+  .tbTitle { font-size: 13px; font-weight: 600; }
+  .assessSel {
+    border: 1px solid #e0deda;
+    border-radius: 7px;
+    padding: 4px 8px;
+    font-size: 12px;
+    background: #fff;
+    color: #1a1a1a;
+    outline: none;
+    cursor: pointer;
+  }
+  .classMeta { font-size: 11px; color: #aaa; }
+  .insLabel { font-size: 12px; color: #666; font-weight: 500; }
+
+  /* ─── Insights body ─── */
+  .insBody {
+    flex: 1;
+    overflow-y: auto;
+    padding: 18px 20px 16px;
+    scroll-behavior: smooth;
+  }
+
+  /* ─── Class results card — right-aligned, compact ─── */
+  .resultsWrap { display: flex; justify-content: flex-end; margin-bottom: 16px; }
+  .resultsCard {
+    background: #fafaf9;
+    border: 1px solid #e0deda;
+    border-radius: 9px;
+    overflow: hidden;
+    display: inline-flex;
+    flex-direction: column;
+  }
+  .resHdr {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 11px 5px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .resHdr:hover { background: #f3f2f0; }
+  .resTitle { font-size: 9px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: .07em; white-space: nowrap; }
+  .chev { font-size: 9px; color: #ccc; transition: transform .18s; display: inline-block; }
+  .chev.open { transform: rotate(180deg); }
+  .statsRow { display: flex; border-top: 1px solid #e0deda; }
+  .statsRow.hidden { display: none; }
+  .statItem { padding: 7px 10px 8px; text-align: center; border-right: 1px solid #e0deda; }
+  .statItem:last-child { border-right: none; }
+  .statNum { font-size: 14px; font-weight: 700; line-height: 1; }
+  .statLbl { font-size: 9px; color: #aaa; margin-top: 3px; white-space: nowrap; }
+
+  /* ─── Section headers ─── */
+  .secHdr { font-size: 12px; font-weight: 600; color: #1a1a1a; margin-bottom: 10px; }
+
+  /* ─── Findings ─── */
+  .finding {
+    padding: 10px 13px;
+    border: 1px solid #e0deda;
+    border-radius: 9px;
+    margin-bottom: 7px;
+    display: flex;
+    gap: 10px;
+  }
+  .fNum { font-size: 13px; font-weight: 600; color: #ccc; flex-shrink: 0; min-width: 16px; line-height: 1.5; }
+  .fTopic { font-size: 12px; font-weight: 500; margin-bottom: 2px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .sev { padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 500; }
+  .hi  { background: #FCEBEB; color: #A32D2D; }
+  .md  { background: #FAEEDA; color: #854F0B; }
+  .lo  { background: #EAF3DE; color: #3B6D11; }
+  .fDesc { font-size: 11px; color: #666; line-height: 1.65; }
+
+  .divider { height: 1px; background: #e8e6e2; margin: 16px 0; }
+
+  /* ─── Tier preview (Insights view) ─── */
+  .tierPreview { border: 1px solid #e0deda; border-radius: 9px; margin-bottom: 8px; overflow: hidden; }
+  .tpHdr { padding: 7px 13px; display: flex; align-items: center; justify-content: space-between; }
+  .tpHdr.upper  { background: #F0F8EC; }
+  .tpHdr.middle { background: #fafaf9; }
+  .tpHdr.risk   { background: #FEF3F2; }
+  .tpName { font-size: 11px; font-weight: 600; }
+  .tpName.upper  { color: #2E6B0F; }
+  .tpName.middle { color: #555; }
+  .tpName.risk   { color: #A32D2D; }
+  .tpCount { font-size: 10px; color: #999; }
+  .tpBody { padding: 9px 13px 11px; border-top: 1px solid #e0deda; }
+  .tpMsg {
+    font-size: 11px; color: #555; line-height: 1.7;
+    padding: 5px 10px; background: #fafaf9;
+    border-left: 2px solid #ddd; font-style: italic;
+    margin-bottom: 5px; border-radius: 0 4px 4px 0;
+  }
+  .tpMsg.u { border-left-color: #7DC75B; }
+  .tpMsg.r { border-left-color: #E57373; }
+  .tpNote { font-size: 10px; color: #bbb; font-style: italic; }
+
+  /* ─── Footer (Insights) ─── */
+  .pFoot {
+    padding: 11px 20px;
+    border-top: 1px solid #e8e6e2;
+    display: flex;
+    justify-content: flex-end;
+    flex-shrink: 0;
+  }
+  .btnReview {
+    background: #1a1a1a; color: #fff;
+    border: none; padding: 8px 18px;
+    border-radius: 8px; font-size: 12px;
+    cursor: pointer; font-weight: 500;
+    transition: opacity .15s;
+  }
+  .btnReview:hover { opacity: .82; }
+
+  /* ─── Review overlay ─── */
+  .overlay {
+    position: absolute; left: 0; right: 0; bottom: 0; top: 50px;
+    background: #fff;
+    display: flex; flex-direction: column;
+    transform: translateY(100%);
+    transition: transform .28s cubic-bezier(.4,0,.2,1);
+    z-index: 10;
+    border-top: 1px solid #e8e6e2;
+  }
+  .overlay.open { transform: translateY(0); }
+
+  .ovHdr {
+    padding: 11px 20px;
+    border-bottom: 1px solid #e8e6e2;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .ovTitle { font-size: 12px; font-weight: 600; }
+  .btnClose {
+    background: none; border: none;
+    font-size: 22px; color: #bbb;
+    cursor: pointer; line-height: 1; padding: 0 3px;
+  }
+  .btnClose:hover { color: #1a1a1a; }
+
+  .ovBody { flex: 1; overflow-y: auto; padding: 14px 20px 10px; }
+
+  /* ─── Tier blocks (overlay) ─── */
+  .tierBlock {
+    border: 1px solid #e0deda;
+    border-radius: 10px;
+    margin-bottom: 11px;
+    overflow: hidden;
+  }
+  .tbHdr { padding: 9px 13px; display: flex; align-items: center; justify-content: space-between; }
+  .tbHdr.upper  { background: #F0F8EC; }
+  .tbHdr.middle { background: #fafaf9; }
+  .tbHdr.risk   { background: #FEF3F2; }
+  .tbName { font-size: 11px; font-weight: 600; }
+  .tbName.upper  { color: #2E6B0F; }
+  .tbName.middle { color: #555; }
+  .tbName.risk   { color: #A32D2D; }
+  .tbCount { font-size: 10px; color: #999; }
+  .tbBody { padding: 11px 13px; border-top: 1px solid #e0deda; }
+
+  /* ─── Message box with inline pencil ─── */
+  .msgFindingLbl {
+    font-size: 9px; font-weight: 600; color: #bbb;
+    text-transform: uppercase; letter-spacing: .05em;
+    margin-bottom: 4px; margin-top: 8px;
+  }
+  .msgFindingLbl:first-child { margin-top: 0; }
+  .msgBox { position: relative; margin-bottom: 7px; }
+  .msgTxt {
+    font-size: 11px; color: #444; line-height: 1.75;
+    padding: 7px 32px 7px 10px;
+    background: #fafaf9; border-left: 2px solid #e0deda;
+    font-style: italic; border-radius: 0 5px 5px 0;
+  }
+  .msgTxt.u { border-left-color: #7DC75B; }
+  .msgTxt.r { border-left-color: #E57373; }
+  .editBtn {
+    position: absolute; top: 6px; right: 6px;
+    background: none; border: none;
+    cursor: pointer; padding: 3px;
+    color: #ccc; border-radius: 4px; line-height: 1;
+  }
+  .editBtn:hover { color: #666; background: #efefed; }
+  .editBtn svg { display: block; }
+
+  /* ─── Student list ─── */
+  .stuList { display: flex; flex-direction: column; gap: 3px; margin-bottom: 11px; }
+  .stuRow {
+    display: flex; align-items: center; gap: 7px;
+    padding: 5px 7px; border-radius: 7px; background: #fafaf9;
+  }
+  .stuAv {
+    width: 22px; height: 22px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px; font-weight: 700; flex-shrink: 0;
+  }
+  .stuName { font-size: 11px; font-weight: 500; width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
+  .stuScore { font-size: 10px; font-weight: 700; width: 38px; text-align: right; flex-shrink: 0; }
+  .findings { display: flex; gap: 3px; flex-wrap: nowrap; overflow: hidden; flex: 1; }
+  .fChip {
+    font-size: 9px; padding: 2px 7px; border-radius: 8px;
+    background: #EFEFED; color: #555;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 92px; flex-shrink: 0;
+  }
+  .moreRow { font-size: 10px; color: #bbb; padding: 4px 7px; text-align: center; font-style: italic; }
+
+  /* ─── Approve toggle ─── */
+  .approveRow {
+    display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+    padding-top: 10px; border-top: 1px solid #f0f0ee;
+  }
+  .appTxt { font-size: 11px; font-weight: 500; color: #ccc; transition: color .2s; }
+  .appTxt.on { color: #2E6B0F; }
+
+  /* Toggle switch */
+  .toggle { position: relative; display: inline-block; width: 34px; height: 19px; cursor: pointer; flex-shrink: 0; }
+  .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .tTrack {
+    position: absolute; inset: 0;
+    background: #e0deda; border-radius: 10px;
+    transition: background .2s;
+  }
+  .tThumb {
+    position: absolute; top: 3px; left: 3px;
+    width: 13px; height: 13px;
+    background: #fff; border-radius: 50%;
+    transition: transform .2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,.18);
+  }
+  .toggle input:checked ~ .tTrack { background: #4DB832; }
+  .toggle input:checked ~ .tThumb { transform: translateX(15px); }
+
+  /* ─── Overlay footer ─── */
+  .ovFoot {
+    padding: 11px 20px;
+    border-top: 1px solid #e8e6e2;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .hint { font-size: 10px; color: #bbb; transition: color .2s; }
+  .hint.ready { color: #2E6B0F; font-weight: 500; }
+  .btnSend {
+    padding: 8px 20px; border-radius: 8px;
+    font-size: 12px; font-weight: 600;
+    border: none; transition: all .2s;
+    background: #e0deda; color: #aaa; cursor: not-allowed;
+  }
+  .btnSend.active { background: #1a1a1a; color: #fff; cursor: pointer; }
+  .btnSend.active:hover { opacity: .84; }
+
+  /* ─── Review checklist (below the workspace) ─── */
+  .checklist {
+    margin-top: 28px;
+    width: 100%;
+    max-width: 720px;
+    background: #fff;
+    border: 1px solid #d8d6d2;
+    border-radius: 14px;
+    padding: 20px 24px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.05);
+  }
+  .checklist h2 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: #aaa; margin-bottom: 14px; }
+  .cl-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 7px 0; border-bottom: 1px solid #f0f0ee; font-size: 12px; color: #444;
+  }
+  .cl-item:last-child { border-bottom: none; }
+  .cl-item input[type=checkbox] { margin-top: 2px; accent-color: #4DB832; flex-shrink: 0; width: 14px; height: 14px; cursor: pointer; }
+  .cl-item label { cursor: pointer; line-height: 1.5; }
+  .cl-item input:checked + label { color: #aaa; text-decoration: line-through; }
+</style>
+</head>
+<body>
+
+<h1>AnySubject Insights — Prototype Review · AnyGrade</h1>
+
+<div class="wrap">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="tbL">
+      <span class="tbTitle">AnySubject</span>
+      <select class="assessSel">
+        <option>Quiz 3 – Kinematics</option>
+        <option>Quiz 2 – Newton's Laws</option>
+        <option>Midterm Exam</option>
+      </select>
+      <span class="classMeta">BSCS 1-A · 30 students</span>
+    </div>
+    <span class="insLabel">Insights</span>
+  </div>
+
+  <!-- Insights body -->
+  <div class="insBody">
+
+    <!-- Class results — right-aligned -->
+    <div class="resultsWrap">
+      <div class="resultsCard">
+        <div class="resHdr" onclick="toggleStats()">
+          <span class="resTitle">Class results</span>
+          <span class="chev open" id="resChev">▾</span>
+        </div>
+        <div class="statsRow" id="statsRow">
+          <div class="statItem"><div class="statNum">38.4</div><div class="statLbl">Avg / 50</div></div>
+          <div class="statItem"><div class="statNum" style="color:#2E6B0F">76%</div><div class="statLbl">Highest</div></div>
+          <div class="statItem"><div class="statNum" style="color:#A32D2D">44%</div><div class="statLbl">Lowest</div></div>
+          <div class="statItem"><div class="statNum">22</div><div class="statLbl">Passed</div></div>
+          <div class="statItem"><div class="statNum" style="color:#A32D2D">8</div><div class="statLbl">At-risk</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Findings -->
+    <div class="secHdr">What your class struggled with</div>
+
+    <div class="finding">
+      <div class="fNum">1</div>
+      <div>
+        <div class="fTopic">Newton's 3rd Law <span class="sev hi">22 of 30</span></div>
+        <div class="fDesc">The single largest gap in this assessment — showed up across multiple items.</div>
+      </div>
+    </div>
+    <div class="finding">
+      <div class="fNum">2</div>
+      <div>
+        <div class="fTopic">Projectile motion <span class="sev md">17 of 30</span></div>
+        <div class="fDesc">More than half the class showed uncertainty here.</div>
+      </div>
+    </div>
+    <div class="finding">
+      <div class="fNum">3</div>
+      <div>
+        <div class="fTopic">Velocity vs. acceleration <span class="sev md">14 of 30</span></div>
+        <div class="fDesc">Notable especially among students who scored below average.</div>
+      </div>
+    </div>
+    <div class="finding">
+      <div class="fNum">4</div>
+      <div>
+        <div class="fTopic">Uniform motion — net force <span class="sev lo">6 of 30</span></div>
+        <div class="fDesc">Smaller group — worth noting as it connects to the next unit.</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Feedback preview -->
+    <div class="secHdr">Feedback going to students</div>
+
+    <div class="tierPreview">
+      <div class="tpHdr upper"><span class="tpName upper">Upper tier</span><span class="tpCount">6 students · ≥ 75%</span></div>
+      <div class="tpBody">
+        <div class="tpMsg u">"Good work on this assessment. Review the items you missed and keep going."</div>
+        <div class="tpNote">Findings identified and included. No remediation message.</div>
+      </div>
+    </div>
+    <div class="tierPreview">
+      <div class="tpHdr middle"><span class="tpName middle">Middle tier</span><span class="tpCount">16 students · 50–74%</span></div>
+      <div class="tpBody">
+        <div class="tpMsg">"Newton's 3rd Law is a topic you need to give more time to..."</div>
+        <div class="tpMsg">"Go back to projectile motion and work through it carefully..."</div>
+        <div class="tpNote">One remediation message per relevant finding. No status message.</div>
+      </div>
+    </div>
+    <div class="tierPreview">
+      <div class="tpHdr risk"><span class="tpName risk">At-risk</span><span class="tpCount">8 students · below 50%</span></div>
+      <div class="tpBody">
+        <div class="tpMsg r">"Your score is below passing. Address the topics below before the next assessment."</div>
+        <div class="tpNote">Also receives per-finding remediation messages.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="pFoot">
+    <button class="btnReview" onclick="openOverlay()">Review &amp; send →</button>
+  </div>
+
+  <!-- ─── Review overlay ─── -->
+  <div class="overlay" id="overlay">
+    <div class="ovHdr">
+      <span class="ovTitle">Review before sending</span>
+      <button class="btnClose" onclick="closeOverlay()">×</button>
+    </div>
+    <div class="ovBody">
+
+      <!-- Upper tier -->
+      <div class="tierBlock">
+        <div class="tbHdr upper">
+          <span class="tbName upper">Upper tier</span>
+          <span class="tbCount">6 students · ≥ 75%</span>
+        </div>
+        <div class="tbBody">
+          <div class="msgBox">
+            <div class="msgTxt u">"Good work on this assessment. Review the items you missed and keep going."</div>
+            <button class="editBtn" onclick="editMsg(this)" title="Edit message">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                <path d="M11.5 2.5l2 2L5 13H3v-2L11.5 2.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                <path d="M9.5 4.5l2 2" stroke="currentColor" stroke-width="1.5"/>
+              </svg>
+            </button>
+          </div>
+          <div class="stuList">
+            <div class="stuRow"><div class="stuAv" style="background:#C0DD97;color:#27500A">RC</div><div class="stuName">Ramon Cruz</div><div class="stuScore" style="color:#2E6B0F">50/50</div><div class="findings"><span class="fChip">Newton's 3rd Law</span></div></div>
+            <div class="stuRow"><div class="stuAv" style="background:#9FE1CB;color:#085041">MS</div><div class="stuName">Maria Santos</div><div class="stuScore" style="color:#2E6B0F">47/50</div><div class="findings"><span class="fChip">Velocity vs. accel…</span></div></div>
+            <div class="stuRow"><div class="stuAv" style="background:#B5D4F4;color:#0C447C">AL</div><div class="stuName">Ana Lim</div><div class="stuScore" style="color:#2E6B0F">45/50</div><div class="findings"><span class="fChip">Projectile motion</span><span class="fChip">Uniform motion</span></div></div>
+            <div class="moreRow">+ 3 more students</div>
+          </div>
+          <div class="approveRow">
+            <span class="appTxt" id="atxt0">Approved</span>
+            <label class="toggle">
+              <input type="checkbox" id="tog0" onchange="approve(0)">
+              <div class="tTrack"></div>
+              <div class="tThumb"></div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Middle tier -->
+      <div class="tierBlock">
+        <div class="tbHdr middle">
+          <span class="tbName middle">Middle tier</span>
+          <span class="tbCount">16 students · 50–74%</span>
+        </div>
+        <div class="tbBody">
+          <div class="msgFindingLbl">Newton's 3rd Law</div>
+          <div class="msgBox">
+            <div class="msgTxt">"Newton's 3rd Law is a topic you need to give more time to. It comes up again in the units ahead."</div>
+            <button class="editBtn" onclick="editMsg(this)" title="Edit message">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11.5 2.5l2 2L5 13H3v-2L11.5 2.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9.5 4.5l2 2" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+          </div>
+          <div class="msgFindingLbl">Projectile motion</div>
+          <div class="msgBox">
+            <div class="msgTxt">"Go back to projectile motion and work through it carefully before the next assessment."</div>
+            <button class="editBtn" onclick="editMsg(this)" title="Edit message">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11.5 2.5l2 2L5 13H3v-2L11.5 2.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9.5 4.5l2 2" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+          </div>
+          <div class="msgFindingLbl">Velocity vs. acceleration</div>
+          <div class="msgBox">
+            <div class="msgTxt">"Make sure you understand the difference between velocity and acceleration. That distinction matters throughout mechanics."</div>
+            <button class="editBtn" onclick="editMsg(this)" title="Edit message">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11.5 2.5l2 2L5 13H3v-2L11.5 2.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9.5 4.5l2 2" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+          </div>
+          <div class="stuList">
+            <div class="stuRow"><div class="stuAv" style="background:#CECBF6;color:#3C3489">JD</div><div class="stuName">Juan dela Cruz</div><div class="stuScore" style="color:#555">38/50</div><div class="findings"><span class="fChip">Newton's 3rd Law</span><span class="fChip">Projectile mot…</span></div></div>
+            <div class="stuRow"><div class="stuAv" style="background:#FAC775;color:#633806">JM</div><div class="stuName">Jose Mendoza</div><div class="stuScore" style="color:#555">33/50</div><div class="findings"><span class="fChip">Newton's 3rd Law</span><span class="fChip">Velocity vs. ac…</span><span class="fChip">Uniform moti…</span></div></div>
+            <div class="stuRow"><div class="stuAv" style="background:#9FE1CB;color:#085041">BT</div><div class="stuName">Ben Tan</div><div class="stuScore" style="color:#555">38/50</div><div class="findings"><span class="fChip">Projectile mot…</span></div></div>
+            <div class="moreRow">+ 13 more students</div>
+          </div>
+          <div class="approveRow">
+            <span class="appTxt" id="atxt1">Approved</span>
+            <label class="toggle">
+              <input type="checkbox" id="tog1" onchange="approve(1)">
+              <div class="tTrack"></div>
+              <div class="tThumb"></div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- At-risk tier -->
+      <div class="tierBlock">
+        <div class="tbHdr risk">
+          <span class="tbName risk">At-risk</span>
+          <span class="tbCount">8 students · below 50%</span>
+        </div>
+        <div class="tbBody">
+          <div class="msgBox">
+            <div class="msgTxt r">"Your score on this assessment is below passing. You need to address the topics below before the next assessment."</div>
+            <button class="editBtn" onclick="editMsg(this)" title="Edit message">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11.5 2.5l2 2L5 13H3v-2L11.5 2.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9.5 4.5l2 2" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+          </div>
+          <div style="font-size:10px;color:#bbb;font-style:italic;margin-bottom:10px">Also receives per-finding remediation messages.</div>
+          <div class="stuList">
+            <div class="stuRow"><div class="stuAv" style="background:#B5D4F4;color:#0C447C">PL</div><div class="stuName">Pedro Lim</div><div class="stuScore" style="color:#A32D2D">24/50</div><div class="findings"><span class="fChip">Newton's 3rd Law</span><span class="fChip">Projectile mot…</span><span class="fChip">Velocity vs. ac…</span></div></div>
+            <div class="stuRow"><div class="stuAv" style="background:#CECBF6;color:#3C3489">KR</div><div class="stuName">Karen Reyes</div><div class="stuScore" style="color:#A32D2D">22/50</div><div class="findings"><span class="fChip">Newton's 3rd Law</span><span class="fChip">Uniform moti…</span></div></div>
+            <div class="moreRow">+ 6 more students</div>
+          </div>
+          <div class="approveRow">
+            <span class="appTxt" id="atxt2">Approved</span>
+            <label class="toggle">
+              <input type="checkbox" id="tog2" onchange="approve(2)">
+              <div class="tTrack"></div>
+              <div class="tThumb"></div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Overlay footer -->
+    <div class="ovFoot">
+      <span class="hint" id="hint">Approve all three tiers to send</span>
+      <button class="btnSend" id="sendBtn" onclick="trySend()">Send feedback to 30 students</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ─── Review checklist ─── -->
+<div class="checklist">
+  <h2>Review checklist</h2>
+  <div class="cl-item"><input type="checkbox" id="c1"><label for="c1">Class results card is right-aligned, compact, and collapses cleanly without shifting anything below it</label></div>
+  <div class="cl-item"><input type="checkbox" id="c2"><label for="c2">Findings stack below the card at full width with no layout breakage</label></div>
+  <div class="cl-item"><input type="checkbox" id="c3"><label for="c3">Three tiers show correct score ranges: Upper ≥75%, Middle 50–74%, At-risk &lt;50%</label></div>
+  <div class="cl-item"><input type="checkbox" id="c4"><label for="c4">"Review &amp; send →" opens the overlay. The × button closes it at any time, regardless of approval state</label></div>
+  <div class="cl-item"><input type="checkbox" id="c5"><label for="c5">Pencil icon sits inside each message box (top-right corner). Clicking it opens an edit prompt</label></div>
+  <div class="cl-item"><input type="checkbox" id="c6"><label for="c6">Editing a remediation message updates the text in place. (In production: shared across all students with that finding)</label></div>
+  <div class="cl-item"><input type="checkbox" id="c7"><label for="c7">Approve toggles flip green independently. Send button is greyed until all three are on</label></div>
+  <div class="cl-item"><input type="checkbox" id="c8"><label for="c8">Toggling any approved tier back to off re-greys the Send button</label></div>
+  <div class="cl-item"><input type="checkbox" id="c9"><label for="c9">Finding chips on student rows are character-truncated (not word-truncated), with ellipsis</label></div>
+  <div class="cl-item"><input type="checkbox" id="c10"><label for="c10">"+ N more students" rows appear correctly for each tier</label></div>
+  <div class="cl-item"><input type="checkbox" id="c11"><label for="c11">Assessment selector in the topbar switches between assessments (same class)</label></div>
+  <div class="cl-item"><input type="checkbox" id="c12"><label for="c12">Overall feel — does this match what a teacher would actually use?</label></div>
+</div>
+
+<script>
+  const approved = [false, false, false];
+
+  function approve(i) {
+    approved[i] = document.getElementById('tog' + i).checked;
+    const txt = document.getElementById('atxt' + i);
+    txt.classList.toggle('on', approved[i]);
+    const all = approved.every(Boolean);
+    const btn = document.getElementById('sendBtn');
+    btn.className = 'btnSend' + (all ? ' active' : '');
+    const hint = document.getElementById('hint');
+    hint.textContent = all ? 'Ready to send' : 'Approve all three tiers to send';
+    hint.classList.toggle('ready', all);
+  }
+
+  function editMsg(btn) {
+    const box = btn.closest('.msgBox');
+    const el = box.querySelector('.msgTxt');
+    const cur = el.textContent.replace(/^"|"$/g, '').trim();
+    const val = prompt('Edit message (this change applies to all students with this finding):', cur);
+    if (val && val.trim()) el.textContent = '“' + val.trim() + '”';
+  }
+
+  function trySend() {
+    if (!approved.every(Boolean)) return;
+    if (confirm('Send feedback to 30 students?\n\nEach student will receive:\n• Their corrected paper\n• Findings for their wrong items\n• Relevant remediation messages (Middle + At-risk)\n• Their tier status message (Upper + At-risk)')) {
+      alert('Feedback sent to 30 students.');
+    }
+  }
+
+  function openOverlay()  { document.getElementById('overlay').classList.add('open'); }
+  function closeOverlay() { document.getElementById('overlay').classList.remove('open'); }
+
+  function toggleStats() {
+    document.getElementById('statsRow').classList.toggle('hidden');
+    document.getElementById('resChev').classList.toggle('open');
+  }
+</script>
+</body>
+</html>
