@@ -153,10 +153,9 @@ export const CropAnnotation = forwardRef<CropAnnotationHandle, Props>(
         pageHRef.current   = pc.height
         liveBoxes.current  = [...bboxes]
         const tight   = tightCrop(bboxes, pc.width, pc.height)
-        const quarter = quarterCrop(bboxes, pc.width, pc.height)
         cropRef.current = tight
         drawCrop()
-        if (quarter.cw * quarter.ch > tight.cw * tight.ch * 1.5) setShowZoom(true)
+        setShowZoom(true)
         } catch (err) {
           if (!cancelled) setLoadError(err instanceof Error ? err.message : String(err))
         }
