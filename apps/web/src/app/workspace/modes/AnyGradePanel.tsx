@@ -264,18 +264,23 @@ function StudentRow({ file, assessmentTitle, assessmentType, activeClassId }: {
     if (!email || sending) return
     setSending(true)
     try {
-      const objectUrl = URL.createObjectURL(new Blob([], { type: "application/pdf" }))
-      await fetch("/api/send-corrections", {
+      // Convert the object URL to base64 so the server can store the actual scan
+      let pdfBase64 = ""
+      if (file.pdfUrl) {
+        const blob = await fetch(file.pdfUrl).then((r) => r.blob())
+        const buf  = await blob.arrayBuffer()
+        pdfBase64  = btoa(String.fromCharCode(...new Uint8Array(buf)))
+      }
+      const res = await fetch("/api/send-corrections", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           assessmentTitle: assessmentTitle || "Assessment",
           assessmentType,
-          students: [{ name: file.filename, email, gradeResult: file, pdfBase64: "" }],
+          students: [{ name: file.filename, email, gradeResult: file, pdfBase64 }],
         }),
       })
-      URL.revokeObjectURL(objectUrl)
-      setSent(true)
+      if (res.ok) setSent(true)
     } catch { /* swallow */ }
     setSending(false)
   }
