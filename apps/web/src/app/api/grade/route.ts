@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import Anthropic from "@anthropic-ai/sdk"
 import type { GradeResult, GradeFileResult } from "./types"
 
+export const maxDuration = 300
+
 export type { GradeResult, GradeFileResult }
 
 
