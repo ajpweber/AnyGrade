@@ -219,19 +219,19 @@ function parseAnswerKeyText(text: string): { label: string; expected: string }[]
 }
 
 // ── Results table ──────────────────────────────────────────────────────────
-function ResultsTable({ results }: { results: GradeFileResult[] }) {
-  const needsReview = results.some((r) => r.results.some((p) => p.correct === null))
+type ExtendedGradeFileResult = GradeFileResult & { needsManual?: string[] }
 
+function ResultsTable({ results }: { results: ExtendedGradeFileResult[] }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      {needsReview && (
-        <div style={{ padding: "10px 14px", background: "rgba(217,119,6,.12)", border: "1px solid rgba(217,119,6,.3)", borderRadius: 8, fontSize: 12, color: "#D97706" }}>
-          Some answers need manual review — marked with ?
-        </div>
-      )}
       {results.map((file) => (
         <div key={file.filename}>
           <div style={{ fontSize: 12, fontWeight: 600, color: "#ccc", marginBottom: 8 }}>{file.filename}</div>
+          {file.needsManual && file.needsManual.length > 0 && (
+            <div style={{ padding: "8px 12px", background: "rgba(217,119,6,.08)", border: "1px solid rgba(217,119,6,.2)", borderRadius: 6, fontSize: 11, color: "#D97706", marginBottom: 6 }}>
+              Manual entry needed for Q{file.needsManual.join(", Q")}
+            </div>
+          )}
           {file.error ? (
             <div style={{ fontSize: 12, color: "#ef4444", padding: "8px 12px", background: "rgba(239,68,68,.08)", borderRadius: 6 }}>
               Error: {file.error}
@@ -290,6 +290,9 @@ export function AnyGradePanel({ activeClassId }: Props) {
   const [sheetSource, setSheetSource] = useState<"files" | "scanner" | "phone" | null>(null)
   const [dragActive, setDragActive] = useState(false)
   const [files, setFiles] = useState<UploadFile[]>([])
+  const [zipgradeMode, setZipgradeMode] = useState(false)
+  const [hasHandwritten, setHasHandwritten] = useState(false)
+  const [zipgradeDetected, setZipgradeDetected] = useState<"auto" | "manual" | null>(null)
 
   // Answer key
   const [akSource, setAkSource] = useState<AKSource | null>(null)
@@ -304,6 +307,7 @@ export function AnyGradePanel({ activeClassId }: Props) {
   const [extractionWarnings, setExtractionWarnings] = useState<string[]>([])
   const [confirmedItems, setConfirmedItems] = useState<ExtractKeyItem[] | null>(null)
   const [extractionError, setExtractionError] = useState<string | null>(null)
+  const [prevQuestionNums, setPrevQuestionNums] = useState<number[] | null>(null)
 
   // Assessment details (auto-filled after upload, teacher can edit)
   const [assessmentTitle, setAssessmentTitle] = useState("")
@@ -313,7 +317,7 @@ export function AnyGradePanel({ activeClassId }: Props) {
 
   // Grading
   const [grading, setGrading] = useState(false)
-  const [gradeResults, setGradeResults] = useState<GradeFileResult[] | null>(null)
+  const [gradeResults, setGradeResults] = useState<ExtendedGradeFileResult[] | null>(null)
   const [gradeError, setGradeError] = useState<string | null>(null)
 
   const sessionCode = useRef("AG-" + Math.floor(1000 + Math.random() * 9000)).current
@@ -324,7 +328,23 @@ export function AnyGradePanel({ activeClassId }: Props) {
       id: `${f.name}-${f.size}-${Date.now()}-${Math.random()}`,
       name: f.name, size: f.size, file: f, status: "ready" as const,
     }))
-    setFiles((prev) => [...prev, ...next])
+    setFiles((prev) => {
+      // Only auto-detect on first batch (when list was empty)
+      if (prev.length === 0 && next.length > 0) {
+        const first = incoming[0]
+        const fd = new FormData()
+        fd.append("file", first)
+        fetch("/api/detect-sheet", { method: "POST", body: fd })
+          .then((r) => r.json())
+          .then(({ isZipGrade, hasHandwritten: hw }) => {
+            setZipgradeMode(!!isZipGrade)
+            setHasHandwritten(!!hw)
+            setZipgradeDetected("auto")
+          })
+          .catch(() => {})
+      }
+      return [...prev, ...next]
+    })
     if (!sheetSource) setSheetSource("files")
   }, [sheetSource])
 
@@ -347,7 +367,7 @@ export function AnyGradePanel({ activeClassId }: Props) {
       return
     }
 
-    // PDF or image — call extraction API
+    // PDF or image — detect then extract
     const isPdf = f.type === "application/pdf" || f.name.endsWith(".pdf")
     const isImage = f.type.startsWith("image/") || /\.(jpg|jpeg|png|heic)$/i.test(f.name)
     if (!isPdf && !isImage) return // DOCX etc — handled gracefully server-side
@@ -355,6 +375,28 @@ export function AnyGradePanel({ activeClassId }: Props) {
     setExtractionState("extracting")
     const form = new FormData()
     form.append("file", f)
+
+    // Auto-detect: if it's a ZipGrade bubble sheet used as an answer key, read via OMR
+    const detectRes = await fetch("/api/detect-sheet", { method: "POST", body: form })
+    if (detectRes.ok) {
+      const { isZipGrade } = await detectRes.json()
+      if (isZipGrade) {
+        setZipgradeMode(true)
+        setZipgradeDetected("auto")
+        // Read the filled bubbles as the answer key
+        const omrRes = await fetch("/api/omr", { method: "POST", body: form })
+        const omrData = await omrRes.json()
+        const items = Object.entries(omrData.answers ?? {})
+          .filter(([, v]) => v !== null)
+          .map(([num, answer]) => ({ num: Number(num), answer: answer as string }))
+          .sort((a, b) => a.num - b.num)
+        setExtractedItems(items)
+        setExtractionWarnings(omrData.warnings ?? [])
+        setExtractionState(items.length > 0 ? "review" : "no-key")
+        return
+      }
+    }
+
     try {
       const res = await fetch("/api/extract-key", { method: "POST", body: form })
       const data: ExtractKeyResult & { error?: string } = await res.json()
@@ -364,11 +406,27 @@ export function AnyGradePanel({ activeClassId }: Props) {
         return
       }
       if (!data.hasAnswers || data.items.length === 0) {
+        // Store question nums for potential sync check on next upload
+        setPrevQuestionNums(data.questionNums ?? [])
         setExtractionState("no-key")
         return
       }
+
+      // Sync check: second upload is key-only and we have question nums from a prior upload
+      const warnings = [...(data.warnings ?? [])]
+      if (data.sourceType === "key-only" && prevQuestionNums && prevQuestionNums.length > 0) {
+        const keyNums = new Set(data.items.map((i) => i.num))
+        const missing = prevQuestionNums.filter((n) => !keyNums.has(n))
+        const extra = [...keyNums].filter((n) => !prevQuestionNums.includes(n))
+        if (missing.length > 0) warnings.push(`Key is missing questions found in the questionnaire: ${missing.join(", ")}`)
+        if (extra.length > 0) warnings.push(`Key has questions not found in the questionnaire: ${extra.join(", ")}`)
+      }
+
+      // Composite replaces everything — clear stored sequence
+      if (data.sourceType === "composite") setPrevQuestionNums(null)
+
       setExtractedItems(data.items)
-      setExtractionWarnings(data.warnings ?? [])
+      setExtractionWarnings(warnings)
       setExtractionState("review")
     } catch (err) {
       setExtractionError(err instanceof Error ? err.message : "Unknown error")
@@ -387,6 +445,7 @@ export function AnyGradePanel({ activeClassId }: Props) {
     setConfirmedItems(null)
     setExtractionState("idle")
     setExtractionError(null)
+    setPrevQuestionNums(null)
     if (akFileRef.current) akFileRef.current.value = ""
   }
 
@@ -419,8 +478,13 @@ export function AnyGradePanel({ activeClassId }: Props) {
     const form = new FormData()
     form.append("problems", JSON.stringify(problems))
     files.forEach((f) => form.append("files", f.file))
+    const endpoint = zipgradeMode && hasHandwritten
+      ? "/api/grade-cross"
+      : zipgradeMode
+      ? "/api/grade-omr"
+      : "/api/grade"
     try {
-      const res = await fetch("/api/grade", { method: "POST", body: form })
+      const res = await fetch(endpoint, { method: "POST", body: form })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? "Grade request failed")
       setGradeResults(json.fileResults)
@@ -560,6 +624,31 @@ export function AnyGradePanel({ activeClassId }: Props) {
                   </button>
                 </div>
               )}
+
+              {/* ZipGrade OMR toggle — shown once sheets are loaded */}
+              {files.length > 0 && (
+                <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, cursor: "pointer", width: "fit-content" }}>
+                  <input
+                    type="checkbox"
+                    checked={zipgradeMode}
+                    onChange={(e) => { setZipgradeMode(e.target.checked); setZipgradeDetected("manual") }}
+                    style={{ accentColor: "#4DB832", width: 14, height: 14, cursor: "pointer" }}
+                  />
+                  <span style={{ fontSize: 12, color: zipgradeMode ? "#ccc" : "#666", userSelect: "none" }}>
+                    ZipGrade bubble sheets (OMR)
+                  </span>
+                  {zipgradeDetected === "auto" && (
+                    <span style={{ fontSize: 10, color: "#4DB832", background: "rgba(77,184,50,.1)", border: "1px solid rgba(77,184,50,.2)", borderRadius: 4, padding: "1px 6px" }}>
+                      auto-detected
+                    </span>
+                  )}
+                  {zipgradeDetected === "manual" && (
+                    <span style={{ fontSize: 10, color: "#666", background: "rgba(255,255,255,.04)", border: "1px solid #2a2a2a", borderRadius: 4, padding: "1px 6px" }}>
+                      manual
+                    </span>
+                  )}
+                </label>
+              )}
             </div>
           )}
 
@@ -620,27 +709,6 @@ export function AnyGradePanel({ activeClassId }: Props) {
               desc="Photo of handwritten solutions via your paired phone."
             />
           </div>
-
-          {/* Context: manual text entry (quiz / no source selected) */}
-          {(akSource === null || akSource === "quiz") && (
-            <div>
-              <div style={{ fontSize: 11, color: "#555", marginBottom: 8 }}>
-                Or type answers below — one per line: <span style={{ color: "#666", fontFamily: "monospace" }}>problem label | expected answer</span>
-              </div>
-              <textarea
-                value={akText}
-                onChange={(e) => setAkText(e.target.value)}
-                placeholder={"1.301 | ρ = 5333.33 ft\n1.302 | a = 6.83 ft/s²\nQ1 | v = 12 m/s upward"}
-                rows={5}
-                style={{ width: "100%", background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 8, color: "#fff", fontSize: 12, padding: "10px 12px", outline: "none", resize: "vertical", fontFamily: "monospace", boxSizing: "border-box", lineHeight: 1.6 }}
-              />
-              {problems.length > 0 && (
-                <div style={{ fontSize: 11, color: "#4DB832", marginTop: 6 }}>
-                  {problems.length} problem{problems.length !== 1 ? "s" : ""} ready
-                </div>
-              )}
-            </div>
-          )}
 
           {akSource === "file" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
