@@ -54,7 +54,7 @@ export async function openExcelFile(): Promise<{
   sheets: ExcelSheet[];
   workbook: XLSX.WorkBook;
 }> {
-  const [fileHandle] = await (window as Window & { showOpenFilePicker: (o: object) => Promise<FileSystemFileHandle[]> }).showOpenFilePicker({
+  const [fileHandle] = await (window as unknown as { showOpenFilePicker: (o: object) => Promise<FileSystemFileHandle[]> }).showOpenFilePicker({
     types: [
       {
         description: "Excel Files",
