@@ -2,7 +2,6 @@ import { createClient } from "@supabase/supabase-js"
 import OpenAI from "openai"
 import * as dotenv from "dotenv"
 import * as path from "path"
-import * as fs from "fs"
 
 dotenv.config({ path: path.join(import.meta.dirname, "../../.env.local") })
 

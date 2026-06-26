@@ -28,6 +28,7 @@ export function PdfAnnotated({ objectUrl, results }: Props) {
 
   useEffect(() => {
     mountedRef.current = true
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true)
     setError(null)
     setCanvases([])

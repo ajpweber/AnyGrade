@@ -8,7 +8,7 @@ type Props = {
   joinCode: string
 }
 
-export function JoinForm({ classId, joinCode }: Props) {
+export function JoinForm({ classId }: Props) {
   const [name,  setName]  = useState("")
   const [email, setEmail] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -19,7 +19,7 @@ export function JoinForm({ classId, joinCode }: Props) {
     return (
       <div style={{ textAlign: "center", padding: "32px 0" }}>
         <div style={{ fontSize: 40, marginBottom: 16 }}>✓</div>
-        <h2 style={{ margin: "0 0 8px", color: "#4DB832" }}>You're in!</h2>
+        <h2 style={{ margin: "0 0 8px", color: "#4DB832" }}>You&apos;re in!</h2>
         <p style={{ color: "#666", margin: 0, fontSize: 14 }}>
           Your teacher will send graded papers to <strong>{email}</strong>.
           You can close this tab.

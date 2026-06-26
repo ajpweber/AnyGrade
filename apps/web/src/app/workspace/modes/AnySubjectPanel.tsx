@@ -144,6 +144,7 @@ export function AnySubjectPanel({ activeClass }: Props) {
   const supabase = useRef(createClient()).current
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!activeClass) { setAssessments([]); setSelectedId(null); return }
     setLoadingAssessments(true)
     supabase
@@ -155,6 +156,7 @@ export function AnySubjectPanel({ activeClass }: Props) {
   }, [activeClass?.id])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!selectedId) { setSubmissions([]); return }
     setLoadingSubmissions(true)
     supabase

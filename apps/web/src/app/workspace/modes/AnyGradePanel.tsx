@@ -5,10 +5,9 @@ import type { AKSource, UploadFile, ScannerState } from "../types"
 import { formatBytes, INITIAL_SCANNER_STATE } from "../types"
 import type { GradeFileResult } from "@/app/api/grade/route"
 import type { ExtractKeyItem, ExtractKeyResult } from "@/app/api/extract-key/route"
-import { PdfAnnotated } from "./PdfAnnotated"
 
 type Props = {
-  activeClassId: string | null
+  activeClassId?: string | null
 }
 
 // ── SVG icons ──────────────────────────────────────────────────────────────
@@ -220,177 +219,60 @@ function parseAnswerKeyText(text: string): { label: string; expected: string }[]
 }
 
 // ── Results table ──────────────────────────────────────────────────────────
-type ExtendedGradeFileResult = GradeFileResult & { needsManual?: string[]; pdfUrl?: string }
+type ExtendedGradeFileResult = GradeFileResult & { needsManual?: string[] }
 
-type StudentStatus = "graded" | "needs-review" | "error"
-
-function studentStatus(file: ExtendedGradeFileResult): StudentStatus {
-  if (file.error) return "error"
-  if (file.results.some((r) => r.correct === null)) return "needs-review"
-  return "graded"
-}
-
-function StatusBadge({ status }: { status: StudentStatus }) {
-  const styles: Record<StudentStatus, { bg: string; color: string; label: string }> = {
-    "graded":       { bg: "rgba(77,184,50,.12)",   color: "#4DB832", label: "Graded" },
-    "needs-review": { bg: "rgba(217,119,6,.12)",   color: "#D97706", label: "Needs review" },
-    "error":        { bg: "rgba(239,68,68,.12)",   color: "#ef4444", label: "Error" },
-  }
-  const s = styles[status]
+function ResultsTable({ results }: { results: ExtendedGradeFileResult[] }) {
   return (
-    <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: ".04em", borderRadius: 4, padding: "2px 8px", background: s.bg, color: s.color }}>
-      {s.label}
-    </span>
-  )
-}
-
-function StudentRow({ file, assessmentTitle, assessmentType, activeClassId }: {
-  file: ExtendedGradeFileResult
-  assessmentTitle: string
-  assessmentType: string
-  activeClassId: string | null
-}) {
-  const [open, setOpen] = useState(false)
-  const [email, setEmail] = useState("")
-  const [sending, setSending] = useState(false)
-  const [sent, setSent] = useState(false)
-
-  const status   = studentStatus(file)
-  const rawScore = file.rawScore ?? 0
-  const maxScore = file.maxScore ?? 0
-  const name     = file.filename
-
-  async function handleSend() {
-    if (!email || sending) return
-    setSending(true)
-    try {
-      // Convert the object URL to base64 so the server can store the actual scan
-      let pdfBase64 = ""
-      if (file.pdfUrl) {
-        const blob = await fetch(file.pdfUrl).then((r) => r.blob())
-        const buf  = new Uint8Array(await blob.arrayBuffer())
-        let binary = ""
-        for (let i = 0; i < buf.length; i += 8192) {
-          binary += String.fromCharCode(...buf.subarray(i, i + 8192))
-        }
-        pdfBase64 = btoa(binary)
-      }
-      const res = await fetch("/api/send-corrections", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          assessmentTitle: assessmentTitle || "Assessment",
-          assessmentType,
-          students: [{ name: file.filename, email, gradeResult: file, pdfBase64 }],
-        }),
-      })
-      if (res.ok) setSent(true)
-    } catch { /* swallow */ }
-    setSending(false)
-  }
-
-  return (
-    <div style={{ border: `1px solid ${status === "needs-review" ? "#3a2a10" : status === "error" ? "#3a1010" : "#222"}`, borderRadius: 10, overflow: "hidden", marginBottom: 8 }}>
-      {/* Header row */}
-      <div
-        onClick={() => setOpen((o) => !o)}
-        style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", cursor: "pointer", background: "#161616" }}
-      >
-        <span style={{ fontSize: 13, color: "#555", width: 14 }}>{open ? "▾" : "▸"}</span>
-        <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "#ddd", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {name}
-        </div>
-        {status !== "error" && (
-          <span style={{
-            fontSize: 13, fontWeight: 700, borderRadius: 6, padding: "3px 10px",
-            background: status === "graded" ? "rgba(77,184,50,.1)" : "rgba(217,119,6,.1)",
-            color: status === "graded" ? "#4DB832" : "#D97706",
-          }}>
-            {rawScore} / {maxScore}
-          </span>
-        )}
-        <StatusBadge status={status} />
-      </div>
-
-      {/* Expanded */}
-      {open && (
-        <div style={{ borderTop: "1px solid #222", padding: "16px" }}>
-          {status === "error" && (
-            <div style={{ fontSize: 12, color: "#ef4444", padding: "8px 12px", background: "rgba(239,68,68,.08)", borderRadius: 6, marginBottom: 12 }}>
-              {file.error}
-            </div>
-          )}
-          {/* Annotated PDF */}
-          {file.pdfUrl && (
-            <div style={{ marginBottom: 16 }}>
-              <PdfAnnotated objectUrl={file.pdfUrl} results={file.results} />
-            </div>
-          )}
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {results.map((file) => (
+        <div key={file.filename}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "#ccc", marginBottom: 8 }}>{file.filename}</div>
           {file.needsManual && file.needsManual.length > 0 && (
-            <div style={{ padding: "7px 12px", background: "rgba(217,119,6,.08)", border: "1px solid rgba(217,119,6,.2)", borderRadius: 6, fontSize: 11, color: "#D97706", marginBottom: 10 }}>
+            <div style={{ padding: "8px 12px", background: "rgba(217,119,6,.08)", border: "1px solid rgba(217,119,6,.2)", borderRadius: 6, fontSize: 11, color: "#D97706", marginBottom: 6 }}>
               Manual entry needed for Q{file.needsManual.join(", Q")}
             </div>
           )}
-
-
-          {/* Send corrected paper */}
-          {status !== "error" && (
-            <div style={{ borderTop: "1px solid #1c1c1c", paddingTop: 12, display: "flex", gap: 8, alignItems: "center" }}>
-              {sent ? (
-                <span style={{ fontSize: 12, color: "#4DB832" }}>✓ Sent</span>
-              ) : (
-                <>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="student@email.com"
-                    style={{ flex: 1, background: "#111", border: "1px solid #2a2a2a", borderRadius: 6, color: "#fff", fontSize: 12, padding: "6px 10px", outline: "none", fontFamily: "inherit" }}
-                  />
-                  <button
-                    onClick={handleSend}
-                    disabled={!email || sending}
-                    style={{ padding: "7px 14px", borderRadius: 6, border: "none", background: email && !sending ? "#4DB832" : "#2a2a2a", color: email && !sending ? "#fff" : "#555", fontSize: 11, fontWeight: 600, cursor: email && !sending ? "pointer" : "default" }}
-                  >
-                    {sending ? "Sending…" : "Send corrected paper"}
-                  </button>
-                </>
-              )}
+          {file.error ? (
+            <div style={{ fontSize: 12, color: "#ef4444", padding: "8px 12px", background: "rgba(239,68,68,.08)", borderRadius: 6 }}>
+              Error: {file.error}
             </div>
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid #2a2a2a" }}>
+                  <th style={{ textAlign: "left", padding: "6px 10px", color: "#666", fontWeight: 600 }}>Problem</th>
+                  <th style={{ textAlign: "left", padding: "6px 10px", color: "#666", fontWeight: 600 }}>Read</th>
+                  <th style={{ textAlign: "center", padding: "6px 10px", color: "#666", fontWeight: 600 }}>Result</th>
+                  <th style={{ textAlign: "center", padding: "6px 10px", color: "#666", fontWeight: 600 }}>Confidence</th>
+                </tr>
+              </thead>
+              <tbody>
+                {file.results.map((r) => (
+                  <tr key={r.label} style={{ borderBottom: "1px solid #1c1c1c" }}>
+                    <td style={{ padding: "8px 10px", color: "#4DB832", fontWeight: 600 }}>{r.label}</td>
+                    <td style={{ padding: "8px 10px", color: "#ccc" }}>{r.read}</td>
+                    <td style={{ padding: "8px 10px", textAlign: "center" }}>
+                      {r.correct === true
+                        ? <span style={{ color: "#4DB832", fontWeight: 700 }}>✓</span>
+                        : r.correct === false
+                        ? <span style={{ color: "#ef4444", fontWeight: 700 }}>✗</span>
+                        : <span style={{ color: "#D97706", fontWeight: 700 }}>?</span>}
+                    </td>
+                    <td style={{ padding: "8px 10px", textAlign: "center" }}>
+                      <span style={{
+                        fontSize: 10, fontWeight: 600, borderRadius: 4, padding: "2px 7px",
+                        background: r.confidence === "high" ? "rgba(77,184,50,.15)" : r.confidence === "medium" ? "rgba(217,119,6,.15)" : "rgba(239,68,68,.12)",
+                        color: r.confidence === "high" ? "#4DB832" : r.confidence === "medium" ? "#D97706" : "#ef4444",
+                      }}>
+                        {r.confidence}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </div>
-      )}
-    </div>
-  )
-}
-
-function ResultsTable({ results, assessmentTitle, assessmentType, activeClassId }: {
-  results: ExtendedGradeFileResult[]
-  assessmentTitle: string
-  assessmentType: string
-  activeClassId: string | null
-}) {
-  const anyNeedsReview = results.some((r) => studentStatus(r) === "needs-review")
-  return (
-    <div>
-      {anyNeedsReview && (
-        <div style={{ padding: "8px 14px", background: "rgba(217,119,6,.08)", border: "1px solid rgba(217,119,6,.2)", borderRadius: 8, fontSize: 12, color: "#D97706", marginBottom: 14 }}>
-          Some answers need manual review — marked with ?
-        </div>
-      )}
-      <div style={{ padding: "6px 16px 10px", display: "flex", alignItems: "center", gap: 10 }}>
-        <span style={{ fontSize: 11, color: "#555" }}>
-          {results[0]?.results.length ?? 0} items
-          {results[0]?.maxScore ? ` · ${(results[0].maxScore / Math.max(1, results[0].results.length)).toFixed(0)} pt each · ${results[0].maxScore} pts total` : ""}
-        </span>
-      </div>
-      <div style={{ display: "flex", alignItems: "center", padding: "4px 16px", marginBottom: 6 }}>
-        <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".08em", color: "#555", flex: 1 }}>Student</span>
-        <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".08em", color: "#555", marginRight: 12 }}>Score</span>
-        <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".08em", color: "#555" }}>Status</span>
-      </div>
-      {results.map((file) => (
-        <StudentRow key={file.filename} file={file} assessmentTitle={assessmentTitle} assessmentType={assessmentType} activeClassId={activeClassId} />
       ))}
     </div>
   )
@@ -400,7 +282,7 @@ function ResultsTable({ results, assessmentTitle, assessmentType, activeClassId 
 const ASSESSMENT_TYPES = ["Quiz", "Activity", "Seatwork", "Exam", "Long Exam"]
 
 // ── Main component ─────────────────────────────────────────────────────────
-export function AnyGradePanel({ activeClassId }: Props) {
+export function AnyGradePanel(_props: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const akFileRef = useRef<HTMLInputElement>(null)
 
@@ -438,7 +320,7 @@ export function AnyGradePanel({ activeClassId }: Props) {
   const [gradeResults, setGradeResults] = useState<ExtendedGradeFileResult[] | null>(null)
   const [gradeError, setGradeError] = useState<string | null>(null)
 
-  const sessionCode = useRef("AG-" + Math.floor(1000 + Math.random() * 9000)).current
+  const [sessionCode] = useState(() => "AG-" + Math.floor(1000 + Math.random() * 9000))
 
   const addFiles = useCallback((incoming: FileList | null) => {
     if (!incoming) return
@@ -450,30 +332,16 @@ export function AnyGradePanel({ activeClassId }: Props) {
       // Only auto-detect on first batch (when list was empty)
       if (prev.length === 0 && next.length > 0) {
         const first = incoming[0]
-        // For large PDFs, extract page 1 client-side to stay under Vercel's 4.5MB body limit
-        const runDetect = async () => {
-          let sampleFile: File = first
-          if (first.name.endsWith(".pdf") && first.size > 2_000_000) {
-            try {
-              const { PDFDocument } = await import("pdf-lib")
-              const buf = await first.arrayBuffer()
-              const src = await PDFDocument.load(buf, { ignoreEncryption: true })
-              const dest = await PDFDocument.create()
-              const [pg] = await dest.copyPages(src, [0])
-              dest.addPage(pg)
-              const bytes = await dest.save()
-              sampleFile = new File([bytes.buffer as ArrayBuffer], "sample-page.pdf", { type: "application/pdf" })
-            } catch { /* fall through with original file */ }
-          }
-          const fd = new FormData()
-          fd.append("file", sampleFile)
-          const r = await fetch("/api/detect-sheet", { method: "POST", body: fd })
-          const { isZipGrade, hasHandwritten: hw } = await r.json()
-          setZipgradeMode(!!isZipGrade)
-          setHasHandwritten(!!hw)
-          setZipgradeDetected("auto")
-        }
-        runDetect().catch(() => {})
+        const fd = new FormData()
+        fd.append("file", first)
+        fetch("/api/detect-sheet", { method: "POST", body: fd })
+          .then((r) => r.json())
+          .then(({ isZipGrade, hasHandwritten: hw }) => {
+            setZipgradeMode(!!isZipGrade)
+            setHasHandwritten(!!hw)
+            setZipgradeDetected("auto")
+          })
+          .catch(() => {})
       }
       return [...prev, ...next]
     })
@@ -589,7 +457,7 @@ export function AnyGradePanel({ activeClassId }: Props) {
   const answerKeyReady = akSource === "file"
     ? (extractionState === "confirmed" && confirmedItems !== null && confirmedItems.length > 0) || (akFileName !== null && textProblems.length > 0)
     : textProblems.length > 0
-  const canGrade = files.length > 0 && answerKeyReady && !grading && !gradeResults
+  const canGrade = files.length > 0 && answerKeyReady && !grading
 
   const akStatusLabel = !akSource ? "not set"
     : akSource === "quiz" ? "from AnyQuiz"
@@ -616,103 +484,48 @@ export function AnyGradePanel({ activeClassId }: Props) {
       // For batch PDFs: split into per-student slices first, then grade each slice
       const isBatchPdf = files.length === 1 && files[0].file.name.endsWith(".pdf") && files[0].file.size > 2_000_000
       if (isBatchPdf) {
+        // ZipGrade: split by page (1 sheet = 1 page), no Claude needed
+        // Handwritten: use split-batch (Claude detects student boundaries by handwriting)
+        const splitEndpoint = zipgradeMode ? "/api/split-pages" : "/api/split-batch"
+        const splitForm = new FormData()
+        splitForm.append("file", files[0].file)
+        const splitRes = await fetch(splitEndpoint, { method: "POST", body: splitForm })
+        const splitText = await splitRes.text()
+        if (!splitText) throw new Error(`split-pages returned empty response (status ${splitRes.status})`)
+        let splitJson: { students: { name: string | null; pdfBase64: string }[]; error?: string }
+        try { splitJson = JSON.parse(splitText) } catch { throw new Error(`split-pages bad JSON: ${splitText.slice(0, 200)}`) }
+        if (!splitRes.ok) throw new Error(splitJson.error ?? "Batch split failed")
+        const { students } = splitJson
         // Grade each student slice
         const allResults: ExtendedGradeFileResult[] = []
-        if (zipgradeMode) {
-          // ZipGrade: split client-side (avoids Vercel 4.5MB body limit on server)
-          const { PDFDocument } = await import("pdf-lib")
-          const buf = await files[0].file.arrayBuffer()
-          const srcDoc = await PDFDocument.load(buf, { ignoreEncryption: true })
-          const totalPages = srcDoc.getPageCount()
-          for (let i = 0; i < totalPages; i++) {
-            const dest = await PDFDocument.create()
-            const [page] = await dest.copyPages(srcDoc, [i])
-            dest.addPage(page)
-            const bytes = await dest.save()
-            const sliceFile = new File([bytes.buffer as ArrayBuffer], `page-${i + 1}.pdf`, { type: "application/pdf" })
-            const gradeForm = new FormData()
-            gradeForm.append("problems", JSON.stringify(problems))
-            gradeForm.append("files", sliceFile)
-            const gradeRes = await fetch(endpoint, { method: "POST", body: gradeForm })
-            const gradeText = await gradeRes.text()
-            if (!gradeText) { allResults.push({ filename: sliceFile.name, results: [], rawScore: 0, maxScore: problems.length, error: `page ${i + 1}: empty response` }); continue }
-            try {
-              const gradeJson = JSON.parse(gradeText)
-              if (gradeRes.ok && gradeJson.fileResults) {
-                const sliceUrl = URL.createObjectURL(sliceFile)
-                allResults.push(...gradeJson.fileResults.map((r: ExtendedGradeFileResult) => ({ ...r, pdfUrl: sliceUrl })))
-              }
-            } catch { allResults.push({ filename: sliceFile.name, results: [], rawScore: 0, maxScore: problems.length, error: `page ${i + 1} bad JSON: ${gradeText.slice(0, 100)}` }) }
-          }
-        } else {
-          // Handwritten batch: upload to Supabase Storage first (bypasses Vercel 4.5MB body limit)
-          // then pass filePath to split-batch which fetches server-side and identifies student boundaries
-          const batchFile = files[0].file
-          const urlRes = await fetch("/api/storage/upload-url", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ filename: batchFile.name, contentType: batchFile.type || "application/pdf" }),
-          })
-          const urlJson = await urlRes.json()
-          if (!urlRes.ok) throw new Error(urlJson.error ?? "Failed to get upload URL")
-          const { uploadUrl, filePath } = urlJson as { uploadUrl: string; filePath: string }
-          const putRes = await fetch(uploadUrl, { method: "PUT", body: batchFile, headers: { "Content-Type": batchFile.type || "application/pdf" } })
-          if (!putRes.ok) throw new Error(`Upload to storage failed (${putRes.status})`)
-          // Now ask split-batch to fetch from storage, detect boundaries, and return student slices
-          const splitRes = await fetch("/api/split-batch", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ filePath }),
-          })
-          const splitText = await splitRes.text()
-          if (!splitText) throw new Error(`split-batch returned empty response (status ${splitRes.status})`)
-          let splitJson: { students: { name: string | null; section: string | null; pdfBase64: string }[]; error?: string }
-          try { splitJson = JSON.parse(splitText) } catch { throw new Error(`split-batch bad JSON: ${splitText.slice(0, 200)}`) }
-          if (!splitRes.ok) throw new Error(splitJson.error ?? "Batch split failed")
-          for (let si = 0; si < splitJson.students.length; si++) {
-            const student = splitJson.students[si]
-            const sliceBlob = await fetch(`data:application/pdf;base64,${student.pdfBase64}`).then((r) => r.blob())
-            const label = student.name ?? `student-${si + 1}`
-            const sliceFile = new File([sliceBlob], `${label}.pdf`, { type: "application/pdf" })
-            const gradeForm = new FormData()
-            gradeForm.append("problems", JSON.stringify(problems))
-            gradeForm.append("files", sliceFile)
-            const gradeRes = await fetch(endpoint, { method: "POST", body: gradeForm })
-            const gradeText = await gradeRes.text()
-            if (!gradeText) { allResults.push({ filename: sliceFile.name, results: [], rawScore: 0, maxScore: problems.length, error: `${label}: empty response` }); continue }
-            try {
-              const gradeJson = JSON.parse(gradeText)
-              if (gradeRes.ok && gradeJson.fileResults) {
-                const sliceUrl = URL.createObjectURL(sliceFile)
-                allResults.push(...gradeJson.fileResults.map((r: ExtendedGradeFileResult) => ({ ...r, filename: student.name ?? r.filename, pdfUrl: sliceUrl })))
-              }
-            } catch { allResults.push({ filename: sliceFile.name, results: [], rawScore: 0, maxScore: problems.length, error: `${label} bad JSON: ${gradeText.slice(0, 100)}` }) }
-          }
+        for (let si = 0; si < students.length; si++) {
+          const student = students[si]
+          const sliceBlob = await fetch(`data:application/pdf;base64,${student.pdfBase64}`).then((r) => r.blob())
+          const sliceFile = new File([sliceBlob], `${student.name ?? `page-${si + 1}`}.pdf`, { type: "application/pdf" })
+          const gradeForm = new FormData()
+          gradeForm.append("problems", JSON.stringify(problems))
+          gradeForm.append("files", sliceFile)
+          const gradeRes = await fetch(endpoint, { method: "POST", body: gradeForm })
+          const gradeText = await gradeRes.text()
+          if (!gradeText) { allResults.push({ filename: sliceFile.name, results: [], rawScore: 0, maxScore: problems.length, error: "empty response" }); continue }
+          try {
+            const gradeJson = JSON.parse(gradeText)
+            if (gradeRes.ok && gradeJson.fileResults) {
+              allResults.push(...gradeJson.fileResults.map((r: ExtendedGradeFileResult) => ({
+                ...r, filename: student.name ?? r.filename,
+              })))
+            }
+          } catch { allResults.push({ filename: sliceFile.name, results: [], rawScore: 0, maxScore: problems.length, error: `bad JSON: ${gradeText.slice(0, 100)}` }) }
         }
         setGradeResults(allResults)
       } else {
         const form = new FormData()
         form.append("problems", JSON.stringify(problems))
         files.forEach((f) => form.append("files", f.file))
-        // Extract identity in parallel with grading
-        const identityForms = files.map((f) => { const fd = new FormData(); fd.append("file", f.file); return { name: f.file.name, fd } })
-        const [res, ...identityResps] = await Promise.all([
-          fetch(endpoint, { method: "POST", body: form }),
-          ...identityForms.map(({ fd }) => fetch("/api/extract-identity", { method: "POST", body: fd }).then((r) => r.json()).catch(() => ({}))),
-        ])
+        const res = await fetch(endpoint, { method: "POST", body: form })
         const json = await res.json()
         if (!res.ok) throw new Error(json.error ?? "Grade request failed")
-        const nameMap = new Map(identityForms.map(({ name }, i) => [name, (identityResps[i] as { name?: string | null })?.name ?? null]))
-        const fileMap = new Map(files.flatMap((f) => {
-          const url = URL.createObjectURL(f.file)
-          return [[f.file.name, url], [f.name, url]] as [string, string][]
-        }))
-        const withUrls = (json.fileResults as ExtendedGradeFileResult[]).map((r) => ({
-          ...r,
-          filename: nameMap.get(r.filename) ?? r.filename,
-          pdfUrl:   fileMap.get(r.filename),
-        }))
-        setGradeResults(withUrls)
+        setGradeResults(json.fileResults)
       }
     } catch (err) {
       setGradeError(err instanceof Error ? err.message : "Unknown error")
@@ -1039,7 +852,7 @@ export function AnyGradePanel({ activeClassId }: Props) {
                 {gradeError}
               </div>
             )}
-            {gradeResults && <ResultsTable results={gradeResults} assessmentTitle={assessmentTitle} assessmentType={assessmentType} activeClassId={activeClassId} />}
+            {gradeResults && <ResultsTable results={gradeResults} />}
           </div>
         )}
 

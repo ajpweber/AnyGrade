@@ -2,7 +2,7 @@
 
 import { useCallback } from "react"
 import type { ClassItem, Syllabus, QuizState, QuizTypeId } from "../types"
-import { Q_TYPES, ASSESSMENT_TYPES, INITIAL_QUIZ_STATE } from "../types"
+import { Q_TYPES, ASSESSMENT_TYPES } from "../types"
 
 type Props = {
   activeClass: ClassItem | null

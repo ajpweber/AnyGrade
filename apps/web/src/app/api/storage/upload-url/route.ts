@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   )
 
-  const { filename, contentType } = await req.json()
+  const { filename } = await req.json()
   if (!filename) return NextResponse.json({ error: "filename required" }, { status: 400 })
 
   const ext = filename.split(".").pop() ?? "pdf"

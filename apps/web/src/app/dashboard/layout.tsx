@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { signOut } from "@/app/login/actions"
@@ -32,31 +33,31 @@ export default async function DashboardLayout({
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-0.5 text-sm">
-          <a
+          <Link
             href="/dashboard"
             className="flex items-center gap-2.5 rounded-md px-3 py-2 text-zinc-700 hover:bg-zinc-100 font-medium"
           >
             Dashboard
-          </a>
-          <a
+          </Link>
+          <Link
             href="/dashboard/classes"
             className="flex items-center gap-2.5 rounded-md px-3 py-2 text-zinc-500 hover:bg-zinc-100"
           >
             Classes
-          </a>
-          <a
+          </Link>
+          <Link
             href="/dashboard/assessments"
             className="flex items-center gap-2.5 rounded-md px-3 py-2 text-zinc-500 hover:bg-zinc-100"
           >
             Assessments
-          </a>
-          <a
+          </Link>
+          <Link
             href="/dashboard/upload"
             className="flex items-center gap-2.5 rounded-md px-3 py-2 text-zinc-500 hover:bg-zinc-100"
           >
             Upload scans
-          </a>
-          <a
+          </Link>
+          <Link
             href="/dashboard/corrections"
             className="flex items-center justify-between rounded-md px-3 py-2 text-zinc-500 hover:bg-zinc-100"
           >
@@ -66,7 +67,7 @@ export default async function DashboardLayout({
                 {pendingCorrections}
               </span>
             )}
-          </a>
+          </Link>
         </nav>
 
         <div className="px-3 py-4 border-t border-zinc-100">

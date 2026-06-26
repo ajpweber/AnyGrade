@@ -28,7 +28,7 @@ jobs:
 
       - name: Type check
         working-directory: apps/web
-        run: npx tsc --noEmit
+        run: ./node_modules/.bin/tsc --noEmit
         env:
           # Dummy values so TypeScript doesn't fail on missing env vars at check time
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co

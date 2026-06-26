@@ -63,6 +63,7 @@ export function CorrectionClient({
   const isLast  = step === items.length - 1
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentReading(items[step]?.read ?? "")
     setGuideOpen(false)
   // eslint-disable-next-line react-hooks/exhaustive-deps

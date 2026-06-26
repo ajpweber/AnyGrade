@@ -47,7 +47,7 @@ export function ExcelWriteback({ students }: Props) {
   if (!isFileSystemAccessSupported()) {
     return (
       <div className="rounded-md border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
-        "Write to Excel" requires Chrome or Edge. Your browser doesn't support it.{" "}
+        &quot;Write to Excel&quot; requires Chrome or Edge. Your browser doesn&apos;t support it.{" "}
         <button className="underline" onClick={() => {}}>
           Download CSV instead
         </button>
@@ -170,7 +170,7 @@ export function ExcelWriteback({ students }: Props) {
         <p className="text-sm font-medium">
           Will write{" "}
           <span className="text-green-700 font-semibold">{plan.matched.length}/{total}</span>{" "}
-          scores to "{plan.sheetName}"
+          scores to &quot;{plan.sheetName}&quot;
         </p>
 
         {plan.unmatched.length > 0 && (
@@ -250,7 +250,7 @@ function UnmatchedList({ unmatched }: { unmatched: UnmatchedStudent[] }) {
           <li key={i}>
             <span className="font-medium">{u.anyGradeStudent.name}</span>
             {u.suggestions[0] && (
-              <span className="text-yellow-600"> — closest: "{u.suggestions[0].excelName}" ({Math.round(u.suggestions[0].similarity * 100)}%)</span>
+              <span className="text-yellow-600"> — closest: &quot;{u.suggestions[0].excelName}&quot; ({Math.round(u.suggestions[0].similarity * 100)}%)</span>
             )}
           </li>
         ))}
