@@ -1,3 +1,4 @@
+import { requireAuth } from "@/lib/require-auth"
 import { NextRequest, NextResponse } from "next/server"
 import Anthropic from "@anthropic-ai/sdk"
 import { PDFDocument } from "pdf-lib"
@@ -15,6 +16,9 @@ If only one student name is found, return { "names": ["that name"] }.
 Do not guess or infer — only return names explicitly written on the page.`
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAuth(req)
+  if (auth instanceof NextResponse) return auth
+
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json({ error: "ANTHROPIC_API_KEY not configured" }, { status: 500 })
