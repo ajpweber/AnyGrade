@@ -228,16 +228,24 @@ function parseAnswerKeyText(text: string): { label: string; expected: string }[]
 }
 
 // ── Results table ──────────────────────────────────────────────────────────
-type ExtendedGradeFileResult = GradeFileResult & { needsManual?: string[] }
+type ExtendedGradeFileResult = GradeFileResult & { needsManual?: string[]; pdfUrl?: string }
 
-function ResultsTable({ results }: { results: ExtendedGradeFileResult[] }) {
+type StudentStatus = "graded" | "needs-review" | "error"
+
+function studentStatus(file: ExtendedGradeFileResult): StudentStatus {
+  if (file.error) return "error"
+  if (file.results.some((r) => r.correct === null)) return "needs-review"
+  return "graded"
+}
+
+function StatusBadge({ status }: { status: StudentStatus }) {
+  const styles: Record<StudentStatus, { bg: string; color: string; label: string }> = {
+    "graded":       { bg: "rgba(77,184,50,.12)",   color: "#4DB832", label: "Graded" },
+    "needs-review": { bg: "rgba(217,119,6,.12)",   color: "#D97706", label: "Needs review" },
+    "error":        { bg: "rgba(239,68,68,.12)",   color: "#ef4444", label: "Error" },
+  }
+  const s = styles[status]
   return (
-<<<<<<< HEAD
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      {results.map((file) => (
-        <div key={file.filename}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: "#ccc", marginBottom: 8 }}>{file.filename}</div>
-=======
     <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: ".04em", borderRadius: 4, padding: "2px 8px", background: s.bg, color: s.color }}>
       {s.label}
     </span>
@@ -325,7 +333,6 @@ function StudentRow({ file, assessmentTitle, assessmentType, activeClassId }: {
               <PdfAnnotated objectUrl={file.pdfUrl} results={file.results} />
             </div>
           )}
->>>>>>> f7b346f (feat: revive FastAPI on Railway with Baidu OCR cloud integration)
           {file.needsManual && file.needsManual.length > 0 && (
             <div style={{ padding: "8px 12px", background: "rgba(217,119,6,.08)", border: "1px solid rgba(217,119,6,.2)", borderRadius: 6, fontSize: 11, color: "#D97706", marginBottom: 6 }}>
               Manual entry needed for Q{file.needsManual.join(", Q")}
@@ -372,8 +379,6 @@ function StudentRow({ file, assessmentTitle, assessmentType, activeClassId }: {
             </table>
           )}
         </div>
-<<<<<<< HEAD
-=======
       )}
     </div>
   )
@@ -416,7 +421,7 @@ function ResultsTable({ results, assessmentTitle, assessmentType, activeClassId 
             onClick={(e) => (e.target as HTMLInputElement).select()}
             style={{ ...inputStyle, width: 36 }}
           />
-          <span style={{ color: "#555", fontWeight: 600, letterSpacing: ".06em" }}>ITEMS ·</span>
+          <span style={{ color: "#555", fontWeight: 600, letterSpacing: ".06em" }}>ITEM ·</span>
           <input
             type="number" min={1} value={ptsPerQuestion || ""}
             onChange={(e) => setPtsPerQuestion(Math.max(1, Number(e.target.value)))}
@@ -435,7 +440,6 @@ function ResultsTable({ results, assessmentTitle, assessmentType, activeClassId 
       </div>
       {results.map((file) => (
         <StudentRow key={file.filename} file={file} assessmentTitle={assessmentTitle} assessmentType={assessmentType} activeClassId={activeClassId} />
->>>>>>> f7b346f (feat: revive FastAPI on Railway with Baidu OCR cloud integration)
       ))}
     </div>
   )
@@ -685,12 +689,6 @@ export function AnyGradePanel(_props: Props) {
         const form = new FormData()
         form.append("problems", JSON.stringify(problems))
         files.forEach((f) => form.append("files", f.file))
-<<<<<<< HEAD
-        const res = await fetch(endpoint, { method: "POST", body: form })
-        const json = await res.json()
-        if (!res.ok) throw new Error(json.error ?? "Grade request failed")
-        setGradeResults(json.fileResults)
-=======
         // Extract identity in parallel with grading
         const identityForms = files.map((f) => { const fd = new FormData(); fd.append("files", f.file); return { name: f.file.name, fd } })
         const [res, ...identityResps] = await Promise.all([
@@ -710,7 +708,6 @@ export function AnyGradePanel(_props: Props) {
           pdfUrl:      fileMap.get(r.filename),
         }))
         setGradeResults(withUrls)
->>>>>>> f7b346f (feat: revive FastAPI on Railway with Baidu OCR cloud integration)
       }
     } catch (err) {
       setGradeError(err instanceof Error ? err.message : "Unknown error")
