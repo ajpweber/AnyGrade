@@ -13,6 +13,7 @@ export type GradeResult = {
 
 export type GradeFileResult = {
   filename: string
+  studentName?: string | null
   results: GradeResult[]
   rawScore: number
   maxScore: number

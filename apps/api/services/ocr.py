@@ -13,16 +13,25 @@ import cv2
 import numpy as np
 from PIL import Image
 from dataclasses import dataclass
-from paddleocr import PaddleOCR
 
-# Lazy-init — PaddleOCR takes ~3s to load; only load once per worker
-_ocr: PaddleOCR | None = None
+# PaddleOCR local inference — available when OCR_PROVIDER=local and paddleocr is installed.
+# Currently unused: cloud API (paddle_cloud.py) handles all OCR via Baidu AIStudio.
+try:
+    from paddleocr import PaddleOCR as _PaddleOCR
+    _paddle_available = True
+except ImportError:
+    _PaddleOCR = None  # type: ignore
+    _paddle_available = False
+
+_ocr = None
 
 
-def _get_ocr() -> PaddleOCR:
+def _get_ocr():
     global _ocr
+    if not _paddle_available:
+        raise RuntimeError("paddleocr not installed — set OCR_PROVIDER=baidu to use cloud API instead")
     if _ocr is None:
-        _ocr = PaddleOCR(use_angle_cls=True, lang="en", show_log=False)
+        _ocr = _PaddleOCR(use_angle_cls=True, lang="en", show_log=False)
     return _ocr
 
 

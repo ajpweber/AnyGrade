@@ -10,6 +10,15 @@ type Props = {
   activeClassId?: string | null
 }
 
+// Strips file extension and slug-style underscores; returns "Student" if the
+// value looks like a generated filename rather than a real person's name.
+function cleanDisplayName(raw: string | null | undefined): string {
+  if (!raw) return "Student"
+  const stripped = raw.replace(/\.[a-zA-Z0-9]+$/, "")
+  if (!stripped.includes(" ") && stripped.includes("_")) return "Student"
+  return stripped
+}
+
 // ── SVG icons ──────────────────────────────────────────────────────────────
 function IconFiles() {
   return (
@@ -223,10 +232,100 @@ type ExtendedGradeFileResult = GradeFileResult & { needsManual?: string[] }
 
 function ResultsTable({ results }: { results: ExtendedGradeFileResult[] }) {
   return (
+<<<<<<< HEAD
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       {results.map((file) => (
         <div key={file.filename}>
           <div style={{ fontSize: 12, fontWeight: 600, color: "#ccc", marginBottom: 8 }}>{file.filename}</div>
+=======
+    <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: ".04em", borderRadius: 4, padding: "2px 8px", background: s.bg, color: s.color }}>
+      {s.label}
+    </span>
+  )
+}
+
+function StudentRow({ file, assessmentTitle, assessmentType, activeClassId }: {
+  file: ExtendedGradeFileResult
+  assessmentTitle: string
+  assessmentType: string
+  activeClassId: string | null
+}) {
+  const [open, setOpen] = useState(false)
+  const [email, setEmail] = useState("")
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
+
+  const status   = studentStatus(file)
+  const rawScore = file.rawScore ?? 0
+  const maxScore = file.maxScore ?? 0
+  const name     = cleanDisplayName(file.studentName ?? file.filename)
+
+  async function handleSend() {
+    if (!email || sending) return
+    setSending(true)
+    try {
+      // Convert the object URL to base64 so the server can store the actual scan
+      let pdfBase64 = ""
+      if (file.pdfUrl) {
+        const blob = await fetch(file.pdfUrl).then((r) => r.blob())
+        const buf  = new Uint8Array(await blob.arrayBuffer())
+        let binary = ""
+        for (let i = 0; i < buf.length; i += 8192) {
+          binary += String.fromCharCode(...buf.subarray(i, i + 8192))
+        }
+        pdfBase64 = btoa(binary)
+      }
+      const res = await fetch("/api/send-corrections", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          assessmentTitle: assessmentTitle || "Assessment",
+          assessmentType,
+          students: [{ name: cleanDisplayName(file.studentName ?? file.filename), email, gradeResult: file, pdfBase64 }],
+        }),
+      })
+      if (res.ok) setSent(true)
+    } catch { /* swallow */ }
+    setSending(false)
+  }
+
+  return (
+    <div style={{ border: `1px solid ${status === "needs-review" ? "#3a2a10" : status === "error" ? "#3a1010" : "#222"}`, borderRadius: 10, overflow: "hidden", marginBottom: 8 }}>
+      {/* Header row */}
+      <div
+        onClick={() => setOpen((o) => !o)}
+        style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", cursor: "pointer", background: "#161616" }}
+      >
+        <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "#ddd", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {name}
+        </div>
+        {status !== "error" && (
+          <span style={{
+            fontSize: 13, fontWeight: 700, borderRadius: 6, padding: "3px 10px",
+            background: status === "graded" ? "rgba(77,184,50,.1)" : "rgba(217,119,6,.1)",
+            color: status === "graded" ? "#4DB832" : "#D97706",
+          }}>
+            {rawScore} / {maxScore}
+          </span>
+        )}
+        <StatusBadge status={status} />
+      </div>
+
+      {/* Expanded */}
+      {open && (
+        <div style={{ borderTop: "1px solid #222", padding: "16px" }}>
+          {status === "error" && (
+            <div style={{ fontSize: 12, color: "#ef4444", padding: "8px 12px", background: "rgba(239,68,68,.08)", borderRadius: 6, marginBottom: 12 }}>
+              {file.error}
+            </div>
+          )}
+          {/* Annotated PDF */}
+          {file.pdfUrl && (
+            <div style={{ marginBottom: 16 }}>
+              <PdfAnnotated objectUrl={file.pdfUrl} results={file.results} />
+            </div>
+          )}
+>>>>>>> f7b346f (feat: revive FastAPI on Railway with Baidu OCR cloud integration)
           {file.needsManual && file.needsManual.length > 0 && (
             <div style={{ padding: "8px 12px", background: "rgba(217,119,6,.08)", border: "1px solid rgba(217,119,6,.2)", borderRadius: 6, fontSize: 11, color: "#D97706", marginBottom: 6 }}>
               Manual entry needed for Q{file.needsManual.join(", Q")}
@@ -273,6 +372,70 @@ function ResultsTable({ results }: { results: ExtendedGradeFileResult[] }) {
             </table>
           )}
         </div>
+<<<<<<< HEAD
+=======
+      )}
+    </div>
+  )
+}
+
+function ResultsTable({ results, assessmentTitle, assessmentType, activeClassId }: {
+  results: ExtendedGradeFileResult[]
+  assessmentTitle: string
+  assessmentType: string
+  activeClassId: string | null
+}) {
+  const anyNeedsReview = results.some((r) => studentStatus(r) === "needs-review")
+  const detectedItems = results[0]?.results.length ?? 0
+  const detectedMax   = results[0]?.maxScore ?? 0
+  const detectedPts   = detectedItems > 0 ? Math.round(detectedMax / detectedItems) : 1
+  const [numQuestions, setNumQuestions] = useState(detectedItems || 0)
+  const [ptsPerQuestion, setPtsPerQuestion] = useState(detectedPts || 1)
+  const totalPts = numQuestions * ptsPerQuestion
+
+  const inputStyle: React.CSSProperties = {
+    width: 44, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 5,
+    color: "#ccc", fontSize: 11, padding: "2px 6px", textAlign: "center", fontFamily: "inherit",
+    outline: "none", MozAppearance: "textfield",
+  }
+
+  return (
+    <div>
+      {anyNeedsReview && (
+        <div style={{ padding: "8px 14px", background: "rgba(217,119,6,.08)", border: "1px solid rgba(217,119,6,.2)", borderRadius: 8, fontSize: 12, color: "#D97706", marginBottom: 14 }}>
+          Some answers need manual review — marked with ?
+        </div>
+      )}
+      <style>{`input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}`}</style>
+      <div style={{ padding: "6px 16px 10px", display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ fontSize: 11, color: "#555", display: "flex", alignItems: "center", gap: 6 }}>
+          <input
+            type="number" min={1} value={numQuestions || ""}
+            onChange={(e) => setNumQuestions(Math.max(1, Number(e.target.value)))}
+            onFocus={(e) => e.target.select()}
+            onClick={(e) => (e.target as HTMLInputElement).select()}
+            style={{ ...inputStyle, width: 36 }}
+          />
+          <span style={{ color: "#555", fontWeight: 600, letterSpacing: ".06em" }}>ITEMS ·</span>
+          <input
+            type="number" min={1} value={ptsPerQuestion || ""}
+            onChange={(e) => setPtsPerQuestion(Math.max(1, Number(e.target.value)))}
+            onFocus={(e) => e.target.select()}
+            onClick={(e) => (e.target as HTMLInputElement).select()}
+            style={inputStyle}
+          />
+          <span style={{ color: "#555", fontWeight: 600, letterSpacing: ".06em" }}>PTS/ITEM ·</span>
+          <span style={{ color: "#666", fontWeight: 600, letterSpacing: ".06em" }}>{totalPts} PTS TOTAL</span>
+        </span>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", padding: "4px 16px", marginBottom: 6 }}>
+        <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".08em", color: "#555", flex: 1 }}>Student</span>
+        <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".08em", color: "#555", marginRight: 12 }}>Score</span>
+        <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".08em", color: "#555" }}>Status</span>
+      </div>
+      {results.map((file) => (
+        <StudentRow key={file.filename} file={file} assessmentTitle={assessmentTitle} assessmentType={assessmentType} activeClassId={activeClassId} />
+>>>>>>> f7b346f (feat: revive FastAPI on Railway with Baidu OCR cloud integration)
       ))}
     </div>
   )
@@ -522,10 +685,32 @@ export function AnyGradePanel(_props: Props) {
         const form = new FormData()
         form.append("problems", JSON.stringify(problems))
         files.forEach((f) => form.append("files", f.file))
+<<<<<<< HEAD
         const res = await fetch(endpoint, { method: "POST", body: form })
         const json = await res.json()
         if (!res.ok) throw new Error(json.error ?? "Grade request failed")
         setGradeResults(json.fileResults)
+=======
+        // Extract identity in parallel with grading
+        const identityForms = files.map((f) => { const fd = new FormData(); fd.append("files", f.file); return { name: f.file.name, fd } })
+        const [res, ...identityResps] = await Promise.all([
+          fetch(endpoint, { method: "POST", body: form }),
+          ...identityForms.map(({ fd }) => fetch("/api/extract-identity", { method: "POST", body: fd }).then((r) => r.json()).catch(() => ({}))),
+        ])
+        const json = await res.json()
+        if (!res.ok) throw new Error(json.error ?? "Grade request failed")
+        const nameMap = new Map(identityForms.map(({ name }, i) => [name, (identityResps[i] as { results?: { filename: string; name: string | null }[] })?.results?.[0]?.name ?? null]))
+        const fileMap = new Map(files.flatMap((f) => {
+          const url = URL.createObjectURL(f.file)
+          return [[f.file.name, url], [f.name, url]] as [string, string][]
+        }))
+        const withUrls = (json.fileResults as ExtendedGradeFileResult[]).map((r) => ({
+          ...r,
+          studentName: nameMap.get(r.filename) ?? null,
+          pdfUrl:      fileMap.get(r.filename),
+        }))
+        setGradeResults(withUrls)
+>>>>>>> f7b346f (feat: revive FastAPI on Railway with Baidu OCR cloud integration)
       }
     } catch (err) {
       setGradeError(err instanceof Error ? err.message : "Unknown error")
@@ -583,135 +768,6 @@ export function AnyGradePanel(_props: Props) {
       )}
 
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "24px 32px 0" }}>
-
-        {/* ── Student answer sheets ── */}
-        <div style={{ marginBottom: 28 }}>
-          <SectionLabel>Student answer sheets</SectionLabel>
-
-          {/* Source cards */}
-          <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
-            <SrcCard
-              selected={sheetSource === "files"}
-              onClick={() => { setSheetSource("files"); if (sheetSource !== "files") fileInputRef.current?.click() }}
-              icon={<IconFiles />}
-              title="Files on device"
-              desc="Upload individual sheets or full batches from your computer."
-            />
-            <SrcCard
-              selected={sheetSource === "scanner"}
-              onClick={() => setSheetSource("scanner")}
-              icon={<IconScanner />}
-              title="Dedicated scanner"
-              desc="Sheet-fed ADF scanner. Grades in real time as sheets feed through."
-              badge={
-                <span style={{ fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".04em", padding: "2px 8px", borderRadius: 8, background: "rgba(77,184,50,.15)", color: "#4DB832" }}>
-                  EPSON ES-400 · Ready
-                </span>
-              }
-            />
-            <SrcCard
-              selected={sheetSource === "phone"}
-              onClick={() => setSheetSource("phone")}
-              icon={<IconPhone />}
-              title="Phone camera"
-              desc="Capture with your phone and transfer over WiFi Direct — no internet."
-              badge={
-                <span style={{ fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".04em", padding: "2px 8px", borderRadius: 8, background: "rgba(77,184,50,.1)", color: "#4DB832" }}>
-                  Juan&apos;s iPhone · Paired
-                </span>
-              }
-            />
-          </div>
-
-          {/* Context for selected source */}
-          {sheetSource === "files" && (
-            <div>
-              <input ref={fileInputRef} type="file" multiple accept=".jpg,.jpeg,.png,.heic,.pdf" style={{ display: "none" }} onChange={(e) => addFiles(e.target.files)} />
-              {files.length === 0 ? (
-                <div
-                  className={dragActive ? "drop-zone-active" : ""}
-                  onDragOver={(e) => { e.preventDefault(); setDragActive(true) }}
-                  onDragLeave={() => setDragActive(false)}
-                  onDrop={(e) => { e.preventDefault(); setDragActive(false); addFiles(e.dataTransfer.files) }}
-                  onClick={() => fileInputRef.current?.click()}
-                  style={{ border: `1.5px dashed ${dragActive ? "#4DB832" : "#2a2a2a"}`, borderRadius: 10, padding: "28px 24px", textAlign: "center", cursor: "pointer", transition: "border-color .15s" }}
-                >
-                  <svg style={{ width: 32, height: 32, color: "#555", margin: "0 auto 10px", display: "block" }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path d="M12 15V4M12 4L8 8M12 4l4 4" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M4 17v1a2 2 0 002 2h12a2 2 0 002-2v-1" strokeLinecap="round"/>
-                  </svg>
-                  <div style={{ fontSize: 13, color: "#ccc" }}>
-                    Drop student answer sheets here, or{" "}
-                    <button onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click() }} style={{ background: "none", border: "none", color: "#4DB832", cursor: "pointer", fontSize: 13, padding: 0, textDecoration: "underline" }}>
-                      browse
-                    </button>
-                  </div>
-                  <div style={{ fontSize: 11, color: "#555", marginTop: 6 }}>Individual sheets or full batches — JPG · PNG · HEIC · PDF</div>
-                </div>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  {files.map((f) => (
-                    <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 14px", borderRadius: 8, background: "#1a1a1a" }}>
-                      <span style={{ flex: 1, fontSize: 13, color: "#ccc", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{f.name}</span>
-                      <span style={{ fontSize: 11, color: "#555", flexShrink: 0 }}>{formatBytes(f.size)}</span>
-                      <span style={{ fontSize: 11, fontWeight: 600, borderRadius: 4, padding: "2px 8px", flexShrink: 0, background: "rgba(77,184,50,.18)", color: "#4DB832" }}>Ready</span>
-                      <button onClick={() => removeFile(f.id)} style={{ background: "none", border: "none", color: "#555", fontSize: 16, cursor: "pointer", padding: 0, lineHeight: 1 }}>×</button>
-                    </div>
-                  ))}
-                  <button onClick={() => fileInputRef.current?.click()} style={{ background: "none", border: "1px dashed #2a2a2a", borderRadius: 8, color: "#666", fontSize: 12, padding: "8px 14px", cursor: "pointer", textAlign: "left", marginTop: 4 }}>
-                    + Add more sheets
-                  </button>
-                </div>
-              )}
-
-              {/* ZipGrade OMR toggle — shown once sheets are loaded */}
-              {files.length > 0 && (
-                <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, cursor: "pointer", width: "fit-content" }}>
-                  <input
-                    type="checkbox"
-                    checked={zipgradeMode}
-                    onChange={(e) => { setZipgradeMode(e.target.checked); setZipgradeDetected("manual") }}
-                    style={{ accentColor: "#4DB832", width: 14, height: 14, cursor: "pointer" }}
-                  />
-                  <span style={{ fontSize: 12, color: zipgradeMode ? "#ccc" : "#666", userSelect: "none" }}>
-                    ZipGrade bubble sheets (OMR)
-                  </span>
-                  {zipgradeDetected === "auto" && (
-                    <span style={{ fontSize: 10, color: "#4DB832", background: "rgba(77,184,50,.1)", border: "1px solid rgba(77,184,50,.2)", borderRadius: 4, padding: "1px 6px" }}>
-                      auto-detected
-                    </span>
-                  )}
-                  {zipgradeDetected === "manual" && (
-                    <span style={{ fontSize: 10, color: "#666", background: "rgba(255,255,255,.04)", border: "1px solid #2a2a2a", borderRadius: 4, padding: "1px 6px" }}>
-                      manual
-                    </span>
-                  )}
-                </label>
-              )}
-            </div>
-          )}
-
-          {sheetSource === "scanner" && (
-            <div style={{ padding: "14px 16px", background: "#1a1a1a", borderRadius: 8, display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#4DB832", flexShrink: 0, animation: "ag-pulse 1.4s ease-in-out infinite" }} />
-              <div>
-                <div style={{ fontSize: 13, color: "#ccc", fontWeight: 500 }}>EPSON ES-400</div>
-                <div style={{ fontSize: 11, color: "#555", marginTop: 2 }}>USB · Ready · ADF 50-sheet capacity</div>
-              </div>
-            </div>
-          )}
-
-          {sheetSource === "phone" && (
-            <div style={{ padding: "14px 16px", background: "#1a1a1a", borderRadius: 8, display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ width: 34, height: 34, borderRadius: 8, background: "#2a2a2a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>📱</div>
-              <div>
-                <div style={{ fontSize: 13, color: "#ccc", fontWeight: 500 }}>Juan&apos;s iPhone 15</div>
-                <div style={{ fontSize: 11, color: "#555", marginTop: 2 }}>WiFi Direct · Session: <span style={{ fontFamily: "monospace" }}>{sessionCode}</span></div>
-              </div>
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#4DB832", flexShrink: 0, marginLeft: "auto" }} />
-            </div>
-          )}
-        </div>
 
         {/* ── Answer key / solution ── */}
         <div style={{ marginBottom: 28 }}>
@@ -833,6 +889,113 @@ export function AnyGradePanel(_props: Props) {
                 <div style={{ width: 64, height: 64, background: "#2a2a2a", borderRadius: 6 }} />
                 <span style={{ fontSize: 12, color: "#555", fontFamily: "monospace" }}>Session: {sessionCode}</span>
               </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── Student answer sheets ── */}
+        <div style={{ marginBottom: 28 }}>
+          <SectionLabel>Student answer sheets</SectionLabel>
+
+          {/* Source cards */}
+          <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+            <SrcCard
+              selected={sheetSource === "files"}
+              onClick={() => { setSheetSource("files"); if (sheetSource !== "files") fileInputRef.current?.click() }}
+              icon={<IconFiles />}
+              title="Files on device"
+              desc="Upload individual sheets or full batches from your computer."
+            />
+            <SrcCard
+              selected={sheetSource === "scanner"}
+              onClick={() => setSheetSource("scanner")}
+              icon={<IconScanner />}
+              title="Dedicated scanner"
+              desc="Sheet-fed ADF scanner. Grades in real time as sheets feed through."
+              badge={
+                <span style={{ fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".04em", padding: "2px 8px", borderRadius: 8, background: "rgba(77,184,50,.15)", color: "#4DB832" }}>
+                  EPSON ES-400 · Ready
+                </span>
+              }
+            />
+            <SrcCard
+              selected={sheetSource === "phone"}
+              onClick={() => setSheetSource("phone")}
+              icon={<IconPhone />}
+              title="Phone camera"
+              desc="Capture with your phone and transfer over WiFi Direct — no internet."
+              badge={
+                <span style={{ fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".04em", padding: "2px 8px", borderRadius: 8, background: "rgba(77,184,50,.1)", color: "#4DB832" }}>
+                  Juan&apos;s iPhone · Paired
+                </span>
+              }
+            />
+          </div>
+
+          {/* Context for selected source */}
+          {sheetSource === "files" && (
+            <div>
+              <input ref={fileInputRef} type="file" multiple accept=".jpg,.jpeg,.png,.heic,.pdf" style={{ display: "none" }} onChange={(e) => addFiles(e.target.files)} />
+              {files.length === 0 ? (
+                <div
+                  className={dragActive ? "drop-zone-active" : ""}
+                  onDragOver={(e) => { e.preventDefault(); setDragActive(true) }}
+                  onDragLeave={() => setDragActive(false)}
+                  onDrop={(e) => { e.preventDefault(); setDragActive(false); addFiles(e.dataTransfer.files) }}
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{ border: `1.5px dashed ${dragActive ? "#4DB832" : "#2a2a2a"}`, borderRadius: 10, padding: "28px 24px", textAlign: "center", cursor: "pointer", transition: "border-color .15s" }}
+                >
+                  <svg style={{ width: 32, height: 32, color: "#555", margin: "0 auto 10px", display: "block" }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M12 15V4M12 4L8 8M12 4l4 4" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M4 17v1a2 2 0 002 2h12a2 2 0 002-2v-1" strokeLinecap="round"/>
+                  </svg>
+                  <div style={{ fontSize: 13, color: "#ccc" }}>
+                    Drop student answer sheets here, or{" "}
+                    <button onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click() }} style={{ background: "none", border: "none", color: "#4DB832", cursor: "pointer", fontSize: 13, padding: 0, textDecoration: "underline" }}>
+                      browse
+                    </button>
+                  </div>
+                  <div style={{ fontSize: 11, color: "#555", marginTop: 6 }}>Individual sheets or full batches — JPG · PNG · HEIC · PDF</div>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  {files.map((f) => (
+                    <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 14px", borderRadius: 8, background: "#1a1a1a" }}>
+                      <span style={{ flex: 1, fontSize: 13, color: "#ccc", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{f.name}</span>
+                      {zipgradeDetected === "auto" && (
+                        <span style={{ fontSize: 10, fontWeight: 600, borderRadius: 4, padding: "2px 8px", flexShrink: 0, background: "rgba(77,184,50,.1)", border: "1px solid rgba(77,184,50,.2)", color: "#4DB832" }}>ZipGrade detected</span>
+                      )}
+                      <span style={{ fontSize: 11, fontWeight: 600, borderRadius: 4, padding: "2px 8px", flexShrink: 0, background: "rgba(77,184,50,.18)", color: "#4DB832" }}>Ready</span>
+                      <button onClick={() => removeFile(f.id)} style={{ background: "none", border: "none", color: "#555", fontSize: 16, cursor: "pointer", padding: 0, lineHeight: 1 }}>×</button>
+                    </div>
+                  ))}
+                  <button onClick={() => fileInputRef.current?.click()} style={{ background: "none", border: "1px dashed #2a2a2a", borderRadius: 8, color: "#666", fontSize: 12, padding: "8px 14px", cursor: "pointer", textAlign: "left", marginTop: 4 }}>
+                    + Add more sheets
+                  </button>
+                </div>
+              )}
+
+            </div>
+          )}
+
+          {sheetSource === "scanner" && (
+            <div style={{ padding: "14px 16px", background: "#1a1a1a", borderRadius: 8, display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#4DB832", flexShrink: 0, animation: "ag-pulse 1.4s ease-in-out infinite" }} />
+              <div>
+                <div style={{ fontSize: 13, color: "#ccc", fontWeight: 500 }}>EPSON ES-400</div>
+                <div style={{ fontSize: 11, color: "#555", marginTop: 2 }}>USB · Ready · ADF 50-sheet capacity</div>
+              </div>
+            </div>
+          )}
+
+          {sheetSource === "phone" && (
+            <div style={{ padding: "14px 16px", background: "#1a1a1a", borderRadius: 8, display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 34, height: 34, borderRadius: 8, background: "#2a2a2a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>📱</div>
+              <div>
+                <div style={{ fontSize: 13, color: "#ccc", fontWeight: 500 }}>Juan&apos;s iPhone 15</div>
+                <div style={{ fontSize: 11, color: "#555", marginTop: 2 }}>WiFi Direct · Session: <span style={{ fontFamily: "monospace" }}>{sessionCode}</span></div>
+              </div>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#4DB832", flexShrink: 0, marginLeft: "auto" }} />
             </div>
           )}
         </div>
